@@ -1,4 +1,5 @@
-﻿using APIBase.Helpers;
+﻿using System.Linq;
+using APIBase.Helpers;
 using APIBase.Models.Master;
 using APIBase.Models.POS;
 using APIBase.Models.ReportsModels;
@@ -424,21 +425,23 @@ public class ReportsController : Controller
     }
 
     [HttpGet("SalesByCustomerDiscount")]
-    public async Task<IActionResult> SalesByCustomerDiscount(DatatableRequest request)
+    public async Task<IActionResult> SalesByCustomerDiscount([FromQuery] DatatableRequest request)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
         try
         {
-            var customerIdsInGroup = _context.CustomerCustomerGroups
-                .Where(x => x.CustomerGroupId == request.Id)
-                .Select(x => x.CustomerId);
-
-
             var query = _context.Customers
-                .Where(c => !customerIdsInGroup.Contains(c.Id))
                 .AsNoTracking();
 
+            if (!string.IsNullOrEmpty(request.CustomerGroups))
+            {
+                var customerGroups = request.CustomerGroups.Split(',').ToList();
+                query = _context.CustomerCustomerGroups
+                    .Where(cg => customerGroups.Contains(cg.CustomerGroupId))
+                    .Select(cg => cg.Customer)
+                    .AsNoTracking();
+            }
 
             if (!string.IsNullOrEmpty(request.SearchValue))
             {
@@ -450,6 +453,7 @@ public class ReportsController : Controller
 
             query = query.Skip(request.Start).Take(request.Length);
 
+            // todo: fix ordering by
             var customers = await query
                 .Select(customer => new CustomerReport
                 {

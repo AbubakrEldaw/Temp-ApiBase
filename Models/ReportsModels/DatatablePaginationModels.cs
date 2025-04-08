@@ -18,5 +18,14 @@ namespace APIBase.Models.ReportsModels
         public string? Branches { get; set; }
         public string? Status { get; set; }
         public string? Discounts { get; set; }
+        public string? CustomerGroups { get; set; }
+    }
+
+    public class DatatableResponse
+    {
+        public int Draw { get; set; }
+        public int RecordsTotal { get; set; }
+        public int RecordsFiltered { get; set; }
+        public dynamic Data { get; set; }
     }
 }
