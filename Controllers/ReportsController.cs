@@ -32,11 +32,11 @@ public class ReportsController : Controller
     [HttpGet("DashboardSummary")] // return DashboardModel
     public async Task<IActionResult> DashboardSummaryAsync(DateTime from, DateTime to, string branches = "all", string companyId = null)
     {
-		await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
         var currentCompanyId = User.Claims.Where(x => x.Type == "CompanyId").FirstOrDefault().Value;
         var companies = User.Claims.Where(x => x.Type == "Companies")?.FirstOrDefault();
-        if(companies == null && companyId != null)
+        if (companies == null && companyId != null)
         {
             Console.WriteLine("Related Companies not found");
             return BadRequest("Related Companies not found");
@@ -45,7 +45,7 @@ public class ReportsController : Controller
         if (companies != null && companyId != null)
         {
             var linkedCompanies = JsonConvert.DeserializeObject<List<Company>>(companies.Value);
-            if(!linkedCompanies.Select(x=> x.Id).Contains(companyId))
+            if (!linkedCompanies.Select(x => x.Id).Contains(companyId))
             {
                 Console.WriteLine("company not related your current company");
                 return BadRequest("company not related your current company");
@@ -54,9 +54,9 @@ public class ReportsController : Controller
 
         var posContext = new POSContext(companyId ?? currentCompanyId, _masterContext, _encMaster.AppSettings);
 
-		#region Dashbaord stats
-		//#1 Sales Header
-		var r1 = await posContext.OrderHeaders.Where(x => x.OrderStatusId == "os-paid" && x.VoidBy == null && x.WorkDay.Date >= from.Date && x.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.BranchId))) // sales only
+        #region Dashbaord stats
+        //#1 Sales Header
+        var r1 = await posContext.OrderHeaders.Where(x => x.OrderStatusId == "os-paid" && x.VoidBy == null && x.WorkDay.Date >= from.Date && x.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.BranchId))) // sales only
             .GroupBy(x => 1).Select(x => new
             {
                 SalesOrdersCount = x.Sum(x => !x.IsReturn ? 1 : 0),
@@ -609,15 +609,15 @@ public class ReportsController : Controller
 
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
-		
-		var _companyId = User.Claims.Where(x => x.Type == "CompanyId").FirstOrDefault().Value;
+
+        var _companyId = User.Claims.Where(x => x.Type == "CompanyId").FirstOrDefault().Value;
 
         POSContext _ReportContext = new POSContext(_companyId, _masterContext, _encMaster.AppSettings);
         _ReportContext.Database.SetCommandTimeout(120);
 
-		await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
-		var result =
+        var result =
            //#1 Start With workday table
            await _ReportContext.WorkDays.Where(x => x.OrderHeaders.Count() > 0 && x.Date >= from.Date && x.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.BranchId))) // sales only
            .GroupBy(x => new { x.Date }).Select(x => new
@@ -797,8 +797,8 @@ public class ReportsController : Controller
 
         POSContext _ReportContext = new POSContext(_companyId, _masterContext, _encMaster.AppSettings);
         _ReportContext.Database.SetCommandTimeout(120);
-		await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
-		var result = await _ReportContext.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+        await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        var result = await _ReportContext.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
           .Select(oi => new
           {
               oi,
@@ -837,9 +837,9 @@ public class ReportsController : Controller
 
         POSContext _ReportContext = new POSContext(_companyId, _masterContext, _encMaster.AppSettings);
         _ReportContext.Database.SetCommandTimeout(120);
-		await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
-		var result = await _ReportContext.OrderItems.Where(x => x.Modifier && !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+        var result = await _ReportContext.OrderItems.Where(x => x.Modifier && !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
           .Select(oi => new
           {
               oi,
@@ -877,9 +877,9 @@ public class ReportsController : Controller
 
         POSContext _ReportContext = new POSContext(_companyId, _masterContext, _encMaster.AppSettings);
         _ReportContext.Database.SetCommandTimeout(120);
-		await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
-		var result = await _ReportContext.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+        var result = await _ReportContext.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
           .Select(oi => new
           {
               oi,
@@ -917,9 +917,9 @@ public class ReportsController : Controller
 
         POSContext _ReportContext = new POSContext(_companyId, _masterContext, _encMaster.AppSettings);
         _ReportContext.Database.SetCommandTimeout(120);
-		await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+        await using var transaction = await _ReportContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
-		var result =
+        var result =
          //#1 Start With workday table
          await _ReportContext.OrderPayments.Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
          .Select(x => new
