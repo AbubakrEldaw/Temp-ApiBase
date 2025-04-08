@@ -1,6 +1,7 @@
 using APIBase.Helpers;
 using APIBase.Models;
 using APIBase.Models.Master;
+using APIBase.Models.POS;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -158,15 +159,15 @@ namespace APIBase.Services
                     //,new Claim("PublicKey", "ClientPublic")
                 });
 
-            //POSContext _posContext = new POSContext(user.CompanyId, _MasterContext, _appSettings);
-            //var employee = _posContext.Employees.Include(x => x.PermRole).ThenInclude(x => x.PermRolePerms).AsNoTracking().FirstOrDefault(x => x.Id == user.EmployeeId);
-            //if (employee.PermRole != null)
-            //{
-            //    foreach (var item in employee.PermRole.PermRolePerms)
-            //    {
-            //        claims.AddClaim(new Claim(ClaimTypes.Role, item.PermId));
-            //    }
-            //}
+            POSContext _posContext = new POSContext(user.CompanyId, _MasterContext, _appSettings);
+            var employee = _posContext.Employees.Include(x => x.PermRole).ThenInclude(x => x.PermRolePerms).AsNoTracking().FirstOrDefault(x => x.Id == user.EmployeeId);
+            if (employee.PermRole != null)
+            {
+                foreach (var item in employee.PermRole.PermRolePerms)
+                {
+                    claims.AddClaim(new Claim(ClaimTypes.Role, item.PermId));
+                }
+            }
 
             var _plan = _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.PlanFeatures).FirstOrDefault(x => x.CompanyId == user.CompanyId);
             if (_plan != null)
