@@ -54,7 +54,8 @@ namespace APIBase.Models.POS
                 }
             }
 
-            var user = companyId != "SubPos" ? "sa" : "SubPos";
+            var user = "discounttest";
+            //var user = companyId != "SubPos" ? "sa" : "SubPos";
 
             if (!optionsBuilder.IsConfigured)
             {

@@ -1,13 +1,17 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
 using APIBase.Helpers;
 using APIBase.Models.Master;
 using APIBase.Models.POS;
 using APIBase.Models.ReportsModels;
 using APIBase.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using Company = APIBase.Models.Master.Company;
 
 namespace APIBase.Controllers;
@@ -424,65 +428,171 @@ public class ReportsController : Controller
         return Ok(result);
     }
 
-    [HttpGet("SalesByCustomerDiscount")]
-    public async Task<IActionResult> SalesByCustomerDiscount([FromQuery] DatatableRequest request)
+    [HttpPost("SalesByCustomerDiscount")]
+    public async Task<IActionResult> SalesByCustomerDiscount([FromBody] DatatableAPIRequest request)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
+
         try
         {
-            var query = _context.Customers
+            var stopwatch = Stopwatch.StartNew(); // Start timing
+
+            var orderHeadersQuery = _context.OrderHeaders
+                .Where(oh => oh.DiscountId != null)
+                .AsNoTracking();
+                
+
+            var customerQuery = _context.Customers
                 .AsNoTracking();
 
-            if (!string.IsNullOrEmpty(request.CustomerGroups))
+
+
+            //var query = _context.OrderHeaders
+            //    .Where(oh => oh.DiscountId != null)
+            //    .Select(oh => oh.Customer)
+            //    .AsNoTracking();
+
+            //var query = _context.Customers
+            //    .Where(c => c.OrderHeaders.Any(oh => oh.DiscountId != null))
+            //    .AsNoTracking();
+
+            if (request.CustomerGroups.Count > 0)
             {
-                var customerGroups = request.CustomerGroups.Split(',').ToList();
-                query = _context.CustomerCustomerGroups
-                    .Where(cg => customerGroups.Contains(cg.CustomerGroupId))
-                    .Select(cg => cg.Customer)
-                    .AsNoTracking();
+                var customerGroupQuery = _context.CustomerCustomerGroups
+                        .Where(cg => request.CustomerGroups.Contains(cg.CustomerGroupId))
+                        .Select(cg => cg.Customer)
+                        .AsNoTracking();
+
+                customerQuery = customerQuery.Join(
+                    customerGroupQuery,
+                    customer => customer.Id,
+                    groupedCustomer => groupedCustomer.Id,
+                    (customer, groupedCustomer) => customer
+                );
             }
 
-            if (!string.IsNullOrEmpty(request.SearchValue))
+            if (!string.IsNullOrEmpty(request.Search.Value))
             {
-                query = query.Where(c => c.Name.Contains(request.SearchValue) ||
-                                         c.Phone.Contains(request.SearchValue));
+                customerQuery = customerQuery.Where(c => c.Name.Contains(request.Search.Value) ||
+                                         c.Phone.Contains(request.Search.Value));
             }
 
-            var filteredCount = await query.CountAsync();
+            if (request.Discounts.Count > 0)
+            {
+                orderHeadersQuery = orderHeadersQuery
+                    .Where
+                    (
+                       oh => request.Discounts.Contains(oh.DiscountId) 
+                       || oh.OrderItems.Any(oi => request.Discounts.Contains(oi.DiscountId))
+                    );
+            }
 
-            query = query.Skip(request.Start).Take(request.Length);
+            if (request.From != null && request.To != null)
+            {
+                orderHeadersQuery = orderHeadersQuery
+                    .Where(oh => oh.CreateAt.Date >= request.From.Value.Date && oh.CreateAt.Date <= request.To.Value.Date);
+            }
 
-            // todo: fix ordering by
-            var customers = await query
-                .Select(customer => new CustomerReport
+            var result = orderHeadersQuery
+                .GroupBy(oh => new { oh.CustomerId, oh.DiscountId })
+                .Select(grouped => new
                 {
-                    Id = customer.Id,
-                    Phone = customer.Phone,
-                    Name = customer.Name,
-                    Points = customer.Points,
-                    TotalVisits = customer.OrderHeaders.Count(),
-                    FirstVisit = customer.FirstVisit,
-                    LastVisit = customer.LastVisit,
-                    CreateByNavigation = customer.CreateByNavigation,
-                    CreateAt = customer.CreateAt,
-                    ModifyBy = customer.ModifyBy,
-                    ModifyAt = customer.ModifyAt,
-                    TotalSpent = customer.OrderHeaders.Sum(oh => oh.Total),
-                    TotalDiscount = customer.OrderHeaders.Where(oh => oh.DiscountId != null)
-                                                           .SelectMany(oh => oh.OrderItems)
-                                                           .Sum(oi => oi.DiscountAmount + oi.HeaderDiscountAmount)
+                    grouped.Key.CustomerId,
+                    grouped.Key.DiscountId,
+                    TotalDiscount = grouped.Sum(oh => oh.HeaderDiscountAmount),
+                    TotalSpend = grouped.Sum(oh => oh.Total),
                 })
-                .OrderByDescending(x => x.TotalDiscount)
+                .Join(
+                    customerQuery,
+                    grouped => grouped.CustomerId,
+                    customer => customer.Id,
+                    (grouped, customer) => new CustomerReport
+                    {
+                        Phone = customer.Phone,
+                        Name = customer.Name,
+                        Points = customer.Points,
+                        TotalVisits = customer.OrderHeaders.Count(),
+                        FirstVisit = customer.FirstVisit,
+                        LastVisit = customer.LastVisit,
+                        CreatedByName = customer.CreateByNavigation.Name,
+                        CreatedBySname = customer.CreateByNavigation.Sname,
+                        CreateAt = customer.CreateAt,
+                        TotalSpent = grouped.TotalSpend,
+                        TotalDiscount = grouped.TotalDiscount
+                    }
+                );
+            //var dtoQuery = query
+            //.Select(customer => new CustomerReport
+            //{
+            //    Phone = customer.Phone,
+            //    Name = customer.Name,
+            //    Points = customer.Points,
+            //    TotalVisits = customer.OrderHeaders.Count(),
+            //    FirstVisit = customer.FirstVisit,
+            //    LastVisit = customer.LastVisit,
+            //    CreatedByName = customer.CreateByNavigation.Name,
+            //    CreatedBySname = customer.CreateByNavigation.Sname,
+            //    CreateAt = customer.CreateAt,
+            //    TotalSpent = customer.OrderHeaders.Sum(oh => oh.Total),
+            //    TotalDiscount = customer.OrderHeaders.Where(oh => oh.DiscountId != null)
+            //                                           .SelectMany(oh => oh.OrderItems)
+            //                                           .Sum(oi => oi.DiscountAmount + oi.HeaderDiscountAmount)
+            //});
+
+            //if (request.Order.Count > 0)
+            //{
+            //    for (int i = 0; i < request.Order.Count; i++)
+            //    {
+            //        var columnName = request.Columns[request.Order[i].Column].Data;
+            //        var parameter = Expression.Parameter(typeof(CustomerReport), "c");
+            //        var property = Expression.Property(parameter, columnName);
+            //        var convertedProperty = Expression.Convert(property, typeof(object));
+            //        var lambda = Expression.Lambda<Func<CustomerReport, object>>(convertedProperty, parameter);
+
+            //        if (i == 0)
+            //        {
+            //            if (request.Order[i].Dir == "asc")
+            //            {
+            //                dtoQuery = Queryable.OrderBy(dtoQuery, lambda);
+            //            }
+            //            else
+            //            {
+            //                dtoQuery = Queryable.OrderByDescending(dtoQuery, lambda);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            if (request.Order[i].Dir == "asc")
+            //            {
+            //                dtoQuery = Queryable.ThenBy((IOrderedQueryable<CustomerReport>)dtoQuery, lambda);
+            //            }
+            //            else
+            //            {
+            //                dtoQuery = Queryable.ThenByDescending((IOrderedQueryable<CustomerReport>)dtoQuery, lambda);
+            //            }
+            //        }
+            //    }
+            //}
+
+            var filteredCount = await result.CountAsync();
+
+            var finalResult = await result
+                .Skip(request.Start)
+                .Take(request.Length)
                 .ToListAsync();
+
+            stopwatch.Stop(); // Stop timing
+            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
 
             return Ok(new DatatableResponse
             {
                 Draw = request.Draw,
                 RecordsTotal = filteredCount,
                 RecordsFiltered = filteredCount,
-                Data = customers
+                Data = finalResult
             });
+
         }
         catch (Exception ex)
         {

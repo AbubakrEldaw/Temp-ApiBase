@@ -4,7 +4,6 @@ namespace APIBase.Models.ReportsModels
 {
     public class CustomerReport
     {
-        public Guid Id { get; set; }
         public string Phone { get; set; }
         public string Name { get; set; }
         public int Points { get; set; }
@@ -13,9 +12,8 @@ namespace APIBase.Models.ReportsModels
         public decimal TotalDiscount { get; set; }
         public DateTime? FirstVisit { get; set; }
         public DateTime? LastVisit { get; set; }
-        public Employee CreateByNavigation { get; set; }
+        public string CreatedByName { get; set; }
+        public string CreatedBySname { get; set; }
         public DateTime CreateAt { get; set; }
-        public string ModifyBy { get; set; }
-        public DateTime? ModifyAt { get; set; }
     }
 }
