@@ -45,10 +45,10 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
-        public HashSet<string> Branches { get; set; }
-        public HashSet<string> Status { get; set; }
-        public HashSet<string> Discounts { get; set; }
-        public HashSet<string> CustomerGroups { get; set; }
+        public HashSet<string>? Branches { get; set; }
+        public HashSet<string>? Status { get; set; }
+        public HashSet<string>? Discounts { get; set; }
+        public HashSet<string>? CustomerGroups { get; set; }
         public Search Search { get; set; }
         public List<Order> Order { get; set; }
         public List<Column> Columns { get; set; }

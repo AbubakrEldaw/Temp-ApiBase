@@ -12,8 +12,8 @@ namespace APIBase.Models.ReportsModels
         public decimal TotalDiscount { get; set; }
         public DateTime? FirstVisit { get; set; }
         public DateTime? LastVisit { get; set; }
-        public string CreatedByName { get; set; }
-        public string CreatedBySname { get; set; }
+        public string? CreatedByName { get; set; }
+        public string? CreatedBySname { get; set; }
         public DateTime CreateAt { get; set; }
     }
 }
