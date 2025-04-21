@@ -12,6 +12,7 @@ namespace APIBase.Models.POS
             FeeItems = new HashSet<FeeItem>();
             InverseVariantParent = new HashSet<Item>();
             ModifierGroupItems = new HashSet<ModifierGroupItem>();
+            ItemDiscounts = new HashSet<ItemDiscount>();
             OrderItemItems = new HashSet<OrderItem>();
             OrderItemVariants = new HashSet<OrderItem>();
         }
@@ -61,6 +62,7 @@ namespace APIBase.Models.POS
         public virtual VatGroup VatGroup { get; set; }
         public virtual ICollection<FeeItem> FeeItems { get; set; }
         public virtual ICollection<Item> InverseVariantParent { get; set; }
+        public virtual ICollection<ItemDiscount> ItemDiscounts { get; set; }
         public virtual ICollection<ModifierGroupItem> ModifierGroupItems { get; set; }
         public virtual ICollection<OrderItem> OrderItemItems { get; set; }
         public virtual ICollection<OrderItem> OrderItemVariants { get; set; }

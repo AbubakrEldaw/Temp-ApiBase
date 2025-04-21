@@ -54,13 +54,12 @@ namespace APIBase.Models.POS
                 }
             }
 
-            var user = "discounttest";
             //var user = companyId != "SubPos" ? "sa" : "SubPos";
 
             if (!optionsBuilder.IsConfigured)
             {
                 var connStr = _userDBContext.ConnStrs.FirstOrDefault(x => x.CompanyId == companyId);
-                var cs = string.Format(_appSettings.Client_DB, connStr.ServerName, connStr.InstanceName, connStr.DatabaseName, user, connStr.Password);
+                var cs = string.Format(_appSettings.Client_DB, connStr.ServerName, connStr.InstanceName, connStr.DatabaseName, connStr.UserName, connStr.Password);
 
                 optionsBuilder.UseSqlServer(
                    cs

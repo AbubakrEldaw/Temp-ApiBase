@@ -683,6 +683,281 @@ public class ReportsController : Controller
         }
     }
 
+    [HttpGet("SalesByReceipt")] // return by receipt model
+    public async Task<IActionResult> SalesByReceiptAsync(DateTime from, DateTime to, string branches = "all")
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+
+        var result = await _context.OrderHeaders.Include(x => x.OrderPayments).ThenInclude(x => x.Payment).Where(x => x.WorkDay.Date >= from.Date && x.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.WorkDay.BranchId))) // sales only
+       .Select(x => new SalesReportByReceiptModel
+       {
+           Id = x.Id,
+           Date = x.WorkDay.Date.ToString("yyyy-MM-dd"),
+           Branch = new IdNameModel { Id = x.WorkDay.Branch.Id, Name = x.WorkDay.Branch.Name, Sname = x.WorkDay.Branch.Sname },
+           Number = x.OrderNumber.ToString(),
+           Time = x.CreateAt.ToString("hh:mm tt"),
+           DiningOption = new IdNameModel { Id = x.DiningOption.Id, Name = x.DiningOption.Name, Sname = x.DiningOption.Sname },
+           OrderSource = new IdNameModel { Id = x.OrderSource.Id, Name = x.OrderSource.Name, Sname = x.OrderSource.Sname },
+           Type = new IdNameModel { Id = x.IsReturn ? "1" : "0", Name = x.IsReturn ? "Retrun" : "Sales", Sname = x.IsReturn ? "مرتجع" : "مبيعات" },
+           //TotalVAT = x.TotalVat,
+           //TotalFees = x.FeesTotal,  
+
+           //LineTotal  = x.LineTotal,
+           //LineLevelDiscountAmount = x.OrderItems.Where(x=>!x.Void).Sum(x=>x.DiscountAmount),
+           //OrderLevelDiscountAmount = x.HeaderDiscountAmount,
+           Total = x.Total.ToString("N2"),
+
+           CreatedBy = new IdNameModel { Id = x.CreateByNavigation.Id, Name = x.CreateByNavigation.Name, Sname = x.CreateByNavigation.Sname },
+           WaiterName = new IdNameModel { Id = x.Waiter.Id, Name = x.Waiter.Name, Sname = x.Waiter.Sname },
+           Cashair = new IdNameModel { Id = x.PaidByNavigation.Id, Name = x.PaidByNavigation.Name, Sname = x.PaidByNavigation.Sname },
+           Customer = new CustomerModel { Id = x.Customer.Id.ToString(), Name = x.Customer.Name, Phone = x.Customer.Phone },
+           OrderPayments = x.OrderPayments
+       }).AsNoTracking().ToListAsync();
+
+        return Ok(result);
+    }
+
+
+    [HttpGet("SalesByWorkDay")]
+    public async Task<IActionResult> SalesByWorkDayAsync(DateTime from, DateTime to, string branches = "all")
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+
+        var result =
+          //#1 Start With workday table
+          await _context.WorkDays.Where(x => /*x.OrderHeaders.Count() > 0 &&*/ x.Date >= from.Date && x.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.BranchId))) // sales only
+          .GroupBy(x => new { x.Id, x.Date, x.OpenAt, x.CloseAt, OpenBy = x.OpenByNavigation.Name, CloseBy = x.CloseByNavigation.Name, x.BranchId }).Select(x => new
+          {
+              Id = x.Key.Id,
+              Date = x.Key.Date,
+              OpenAt = x.Key.OpenAt,
+              CloseAt = x.Key.CloseAt,
+              OpenBy = x.Key.OpenBy,
+              CloseBy = x.Key.CloseBy,
+              BranchId = x.Key.BranchId
+          })
+
+          //#2 Sales Header 
+          .GroupJoin(_context.OrderHeaders.Where(x => x.OrderStatusId == "os-paid" && x.VoidBy == null && x.WorkDay.Date >= from.Date && x.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.BranchId)))
+          .GroupBy(x => new { x.WorkDay.Id, x.WorkDay.Date, x.WorkDay.OpenAt, x.WorkDay.CloseAt, OpenBy = x.WorkDay.OpenByNavigation.Name, CloseBy = x.WorkDay.CloseByNavigation.Name, x.BranchId }).Select(x => new
+          {
+              Id = x.Key.Id,
+              Date = x.Key.Date,
+              OpenAt = x.Key.OpenAt,
+              CloseAt = x.Key.CloseAt,
+              OpenBy = x.Key.OpenBy,
+              CloseBy = x.Key.CloseBy,
+              BranchId = x.Key.BranchId,
+              SalesOrdersCount = x.Sum(x => !x.IsReturn ? 1 : 0),
+              SalesOrdersCountReturn = x.Sum(x => x.IsReturn ? 1 : 0),
+              CustomerCount = x.Sum(x => x.CustomerId != null ? 1 : 0),
+              GuestCount = x.Sum(x => !x.IsReturn ? (x.GuestCount ?? 1) : 0),
+          }), c => c.Id, o => o.Id, (c, o) => new
+          {
+              c = c,
+              o = o
+          })
+          .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+          {
+              Id = c.c.Id,
+              Date = c.c.Date,
+              OpenAt = c.c.OpenAt,
+              CloseAt = c.c.CloseAt,
+              OpenBy = c.c.OpenBy,
+              CloseBy = c.c.CloseBy,
+              BranchId = c.c.BranchId,
+              SalesOrdersCount = (o == null) ? null : (decimal?)o.SalesOrdersCount,
+              SalesOrdersCountReturn = (o == null) ? null : (decimal?)o.SalesOrdersCountReturn,
+              CustomerCount = (o == null) ? null : (decimal?)o.CustomerCount,
+              GuestCount = (o == null) ? null : (decimal?)o.GuestCount,
+          })
+
+
+          //#3Order detail table // sales only
+          .GroupJoin(_context.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+          .Select(oi => new
+          {
+              oi,
+              oi.OrderHeader.WorkDay,
+              oi.OrderHeader.IsReturn,
+          })
+          .GroupBy(x => new { x.WorkDay.Id, x.WorkDay.Date, x.WorkDay.OpenAt, x.WorkDay.CloseAt, OpenBy = x.WorkDay.OpenByNavigation.Name, CloseBy = x.WorkDay.CloseByNavigation.Name, x.WorkDay.BranchId }).Select(x => new
+          {
+              Id = x.Key.Id,
+              Date = x.Key.Date,
+              OpenAt = x.Key.OpenAt,
+              CloseAt = x.Key.CloseAt,
+              OpenBy = x.Key.OpenBy,
+              CloseBy = x.Key.CloseBy,
+              BranchId = x.Key.BranchId,
+              ProductsBeforeDiscount = x.Sum(z => z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total + z.oi.DiscountAmount - z.oi.VatAmount) : (z.oi.Total + z.oi.DiscountAmount))),
+              ProductsBeforeDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total + z.oi.DiscountAmount - z.oi.VatAmount) : (z.oi.Total + z.oi.DiscountAmount))),
+              ProductsDiscount = x.Sum(z => z.IsReturn ? 0 : (z.oi.DiscountAmount + z.oi.HeaderDiscountAmount)),
+              ProductsDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : (z.oi.DiscountAmount + z.oi.HeaderDiscountAmount)),
+              ProductsTax = x.Sum(z => z.IsReturn ? 0 : z.oi.VatAmount),
+              ProductsTaxReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.VatAmount),
+              ProductsQuantity = x.Sum(z => z.IsReturn ? 0 : z.oi.Quantity),
+              ProductsQuantityReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.Quantity),
+          }), c => c.Id, o => o.Id, (c, o) => new
+          {
+              c = c,
+              o = o
+          })
+          .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+          {
+              Id = c.c.Id,
+              Date = c.c.Date,
+              OpenAt = c.c.OpenAt,
+              CloseAt = c.c.CloseAt,
+              OpenBy = c.c.OpenBy,
+              CloseBy = c.c.CloseBy,
+              BranchId = c.c.BranchId,
+              SalesOrdersCount = c.c.SalesOrdersCount,
+              SalesOrdersCountReturn = c.c.SalesOrdersCountReturn,
+              CustomerCount = c.c.CustomerCount,
+              GuestCount = c.c.GuestCount,
+              //Plus
+              ProductsBeforeDiscount = (o == null) ? null : (decimal?)o.ProductsBeforeDiscount,
+              ProductsBeforeDiscountReturn = (o == null) ? null : (decimal?)o.ProductsBeforeDiscountReturn,
+              ProductsDiscount = (o == null) ? null : (decimal?)o.ProductsDiscount,
+              ProductsDiscountReturn = (o == null) ? null : (decimal?)o.ProductsDiscountReturn,
+              ProductsTax = (o == null) ? null : (decimal?)o.ProductsTax,
+              ProductsTaxReturn = (o == null) ? null : (decimal?)o.ProductsTaxReturn,
+              ProductsQuantity = (o == null) ? null : (decimal?)o.ProductsQuantity,
+              ProductsQuantityReturn = (o == null) ? null : (decimal?)o.ProductsQuantityReturn
+          })
+
+          //#4 Sales Void
+          .GroupJoin(_context.OrderItems.Where(x => x.Void && (x.KotPrinted ?? false == true) && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+          .GroupBy(x => new { x.OrderHeader.WorkDay.Id, x.OrderHeader.WorkDay.Date, x.OrderHeader.WorkDay.OpenAt, x.OrderHeader.WorkDay.CloseAt, OpenBy = x.OrderHeader.WorkDay.OpenByNavigation.Name, CloseBy = x.OrderHeader.WorkDay.CloseByNavigation.Name, x.OrderHeader.WorkDay.BranchId }).Select(x => new
+          {
+              Id = x.Key.Id,
+              Date = x.Key.Date,
+              OpenAt = x.Key.OpenAt,
+              CloseAt = x.Key.CloseAt,
+              OpenBy = x.Key.OpenBy,
+              CloseBy = x.Key.CloseBy,
+              BranchId = x.Key.BranchId,
+              ProductsVoidQuantity = x.Sum(z => z.Quantity),
+              ProductsVoidAmount = x.Sum(z => z.Total)
+          }), c => c.Id, o => o.Id, (c, o) => new
+          {
+              c = c,
+              o = o
+          })
+          .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+          {
+              Id = c.c.Id,
+              Date = c.c.Date,
+              OpenAt = c.c.OpenAt,
+              CloseAt = c.c.CloseAt,
+              OpenBy = c.c.OpenBy,
+              CloseBy = c.c.CloseBy,
+              BranchId = c.c.BranchId,
+              SalesOrdersCount = c.c.SalesOrdersCount,
+              SalesOrdersCountReturn = c.c.SalesOrdersCountReturn,
+              CustomerCount = c.c.CustomerCount,
+              GuestCount = c.c.GuestCount,
+              ProductsBeforeDiscount = c.c.ProductsBeforeDiscount,
+              ProductsBeforeDiscountReturn = c.c.ProductsBeforeDiscountReturn,
+              ProductsDiscount = c.c.ProductsDiscount,
+              ProductsDiscountReturn = c.c.ProductsDiscountReturn,
+              ProductsTax = c.c.ProductsTax,
+              ProductsTaxReturn = c.c.ProductsTaxReturn,
+              ProductsQuantity = c.c.ProductsQuantity,
+              ProductsQuantityReturn = c.c.ProductsQuantityReturn,
+              ProductsVoidQuantity = (o == null) ? null : (decimal?)o.ProductsVoidQuantity,
+              ProductsVoidAmount = (o == null) ? null : (decimal?)o.ProductsVoidAmount
+          })
+
+          //#5 Fees Details
+          .GroupJoin(_context.OrderFees.Where(x => x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+             .Select(oi => new
+             {
+                 oi,
+                 oi.OrderHeader.WorkDay,
+                 oi.OrderHeader.IsReturn
+             })
+          .GroupBy(x => new { x.WorkDay.Id, x.WorkDay.Date, x.WorkDay.OpenAt, x.WorkDay.CloseAt, OpenBy = x.WorkDay.OpenByNavigation.Name, CloseBy = x.WorkDay.CloseByNavigation.Name, x.WorkDay.BranchId }).Select(x => new
+          {
+              Id = x.Key.Id,
+              Date = x.Key.Date,
+              OpenAt = x.Key.OpenAt,
+              CloseAt = x.Key.CloseAt,
+              OpenBy = x.Key.OpenBy,
+              CloseBy = x.Key.CloseBy,
+              BranchId = x.Key.BranchId,
+              FeesBeforeDiscount = x.Sum(z => z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total - z.oi.VatAmount) : (z.oi.Total))),
+              FeesBeforeDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total - z.oi.VatAmount) : (z.oi.Total))),
+              FeesDiscount = 0,
+              FeesDiscountReturn = 0,
+              FeesTax = x.Sum(z => z.IsReturn ? 0 : z.oi.VatAmount),
+              FeesTaxReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.VatAmount)
+          }), c => c.Id, o => o.Id, (c, o) => new
+          {
+              c = c,
+              o = o
+          })
+          .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+          {
+              Id = c.c.Id,
+              Date = c.c.Date,
+              OpenAt = c.c.OpenAt,
+              CloseAt = c.c.CloseAt,
+              OpenBy = c.c.OpenBy,
+              CloseBy = c.c.CloseBy,
+              BranchId = c.c.BranchId,
+              SalesOrdersCount = c.c.SalesOrdersCount ?? 0,
+              SalesOrdersCountReturn = c.c.SalesOrdersCountReturn ?? 0,
+              CustomerCount = c.c.CustomerCount ?? 0,
+              GuestCount = c.c.GuestCount ?? 0,
+              ProductsBeforeDiscount = c.c.ProductsBeforeDiscount ?? 0,
+              ProductsBeforeDiscountReturn = c.c.ProductsBeforeDiscountReturn ?? 0,
+              ProductsDiscount = c.c.ProductsDiscount ?? 0,
+              ProductsDiscountReturn = c.c.ProductsDiscountReturn ?? 0,
+              ProductsTax = c.c.ProductsTax ?? 0,
+              ProductsTaxReturn = c.c.ProductsTaxReturn ?? 0,
+              ProductsQuantity = c.c.ProductsQuantity ?? 0,
+              ProductsQuantityReturn = c.c.ProductsQuantityReturn ?? 0,
+              ProductsVoidQuantity = c.c.ProductsVoidQuantity ?? 0,
+              ProductsVoidAmount = c.c.ProductsVoidAmount ?? 0,
+              FeesBeforeDiscount = ((o == null) ? null : (decimal?)o.FeesBeforeDiscount) ?? 0,
+              FeesBeforeDiscountReturn = ((o == null) ? null : (decimal?)o.FeesBeforeDiscountReturn) ?? 0,
+              FeesDiscount = ((o == null) ? null : (decimal?)o.FeesDiscount) ?? 0,
+              FeesDiscountReturn = ((o == null) ? null : (decimal?)o.FeesDiscountReturn) ?? 0,
+              FeesTax = ((o == null) ? null : (decimal?)o.FeesTax) ?? 0,
+              FeesTaxReturn = ((o == null) ? null : (decimal?)o.FeesTaxReturn) ?? 0
+          })
+              .Select(c => new SalesReportByWorkDayModel()
+              {
+                  Id = c.Id.ToString(),
+                  BranchId = c.BranchId,
+                  Date = c.Date.ToString("yyyy-MM-dd"),
+                  OpenAt = c.OpenAt.ToString("hh:mm tt"),
+                  CloseAt = c.CloseAt.Value.ToString("hh:mm tt"),
+                  OpenBy = c.OpenBy,
+                  CloseBy = c.CloseBy,
+                  OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                  AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                  AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                  CustomersCount = c.CustomerCount.ToString("N0"),
+                  GuestsCount = c.GuestCount.ToString("N0"),
+                  GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
+                  NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
+                  NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
+                  NetQuantity = (c.ProductsQuantity - c.ProductsQuantityReturn).ToString("N2"),
+                  VoidAmount = (c.ProductsVoidAmount).ToString("N2"),
+                  VoidQuantity = (c.ProductsVoidQuantity).ToString("N2"),
+                  DiscountAmount = (c.ProductsDiscount + c.FeesDiscount - c.ProductsDiscountReturn - c.FeesDiscountReturn).ToString("N2"),
+                  VatAmount = ((c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
+                  RefundAmount = (c.ProductsBeforeDiscountReturn + c.FeesBeforeDiscountReturn).ToString("N2"),
+                  RefundQuantity = (c.ProductsQuantityReturn).ToString("N2")
+              }).AsNoTracking().ToListAsync();
+
+        return Ok(result);
+    }
+
+
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
 
