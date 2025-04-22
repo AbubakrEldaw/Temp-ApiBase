@@ -75,21 +75,21 @@ public class PaymentsController : ControllerBase
          .AsNoTracking()
          .ToListAsync();
 
-        IEnumerable<WorkDayDetailsModel> result = orderPaymentsGroup
-           .GroupJoin(
-               payments,
-               group => group.PaymentId,
-               payment => payment.Id,
-               (group, payment) => new WorkDayDetailsModel()
-               {
-                   PaymentId = group.PaymentId,
-                   PaymentName = payment.FirstOrDefault().Name,
-                   PaymentSname = payment.FirstOrDefault().Sname,
-                   BranchId = group.BranchId,
-                   Total = group.Total
-               }
-           )
-           .ToList();
+        //IEnumerable<WorkDayDetailsModel> result = orderPaymentsGroup
+        //   .GroupJoin(
+        //       payments,
+        //       group => group.PaymentId,
+        //       payment => payment.Id,
+        //       (group, payment) => new WorkDayDetailsModel()
+        //       {
+        //           PaymentId = group.PaymentId,
+        //           PaymentName = payment.FirstOrDefault().Name,
+        //           PaymentSname = payment.FirstOrDefault().Sname,
+        //           BranchId = group.BranchId,
+        //           Total = group.Total
+        //       }
+        //   )
+        //   .ToList();
 
         //var paymentIdSumGroup = await _context.OrderPayments
         //    .Where(op => op.OrderHeader.WorkDayId == id)
