@@ -185,22 +185,24 @@ namespace APIBase.Models.ReportsModels
         public string VoidAmount { get; set; } = "0";
     }
 
-    //public partial class WorkDayDetailsModel
-    //{
-    //    public string PaymentId { get; set; }
-    //    public string PaymentName { get; set; }
-    //    public string PaymentSname { get; set; }
-    //    public string BranchId { get; set; }
-    //    public decimal Total { set; get; }
-    //}
-
     public partial class WorkDayDetailsModel
     {
-        public string Id { get; set; }
-        public string BranchId { get; set; }
-        public string OrderHeaderId { set; get; }
-        public List<OrderPayment> OrderPayments { get; set; }
+        //public SalesReportByWorkDayModel WorkDaySummary { get; set; }
+        public string BranchName { get; set; }
+        public string PaymentId { get; set; }
+        public string PaymentName { get; set; }
+        public string PaymentSname { get; set; }
+        public decimal Total { set; get; }
     }
+
+    //public partial class WorkDayDetailsModel
+    //{
+    //    public string Id { get; set; }
+    //    public string BranchId { get; set; }
+    //    public string OrderHeaderId { set; get; }
+    //    public List<OrderPayment> OrderPayments { get; set; }
+    //}
+
     public partial class SalesReportByXModel
     {
         public string Id { get; set; }
