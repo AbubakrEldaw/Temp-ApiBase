@@ -957,7 +957,6 @@ public class ReportsController : Controller
         return Ok(result);
     }
 
-
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
 
