@@ -346,4 +346,26 @@ namespace APIBase.Models.ReportsModels
         public string VatReportStatus { get; set; }
         public string ZatcaReportStatus { get; set; }
     }
+
+    public partial class SalesReportByPaymentModel111
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Sname { get; set; }
+        public string? Groupby1 { get; set; }
+        public string? Groupby2 { get; set; }
+        public string TotalAmount { get; set; } = "0";
+        public string RefundAmount { get; set; } = "0";
+        public string NetAmount { get; set; } = "0";
+        public string PaymentTypeId { get; set; }
+    }
+
+    public partial class ReportWrapper
+    {
+        public string Id { get; set; }
+        public Dictionary<string, string> Types { get; set; }
+        public dynamic Data { get; set; }
+    }
+
+
 }

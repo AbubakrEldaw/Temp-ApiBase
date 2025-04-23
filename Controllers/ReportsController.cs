@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 using APIBase.Helpers;
+using APIBase.Models.Enums;
 using APIBase.Models.Master;
 using APIBase.Models.POS;
 using APIBase.Models.ReportsModels;
@@ -468,8 +469,8 @@ public class ReportsController : Controller
                 .ToList();
 
             var orderHeader = _context.OrderHeaders
-                .Where(oh => request.Discounts.Contains(oh.DiscountId) 
-                    && oh.CustomerId != null 
+                .Where(oh => request.Discounts.Contains(oh.DiscountId)
+                    && oh.CustomerId != null
                     && customerIds.Contains(oh.CustomerId.Value))
                 .GroupBy(oh => oh.CustomerId)
                 .Select(g => new
@@ -480,8 +481,8 @@ public class ReportsController : Controller
                 }).ToList();
 
             var orderItem = _context.OrderItems
-                .Where(oi => request.Discounts.Contains(oi.DiscountId) 
-                    && oi.OrderHeader.CustomerId != null 
+                .Where(oi => request.Discounts.Contains(oi.DiscountId)
+                    && oi.OrderHeader.CustomerId != null
                     && customerIds.Contains(oi.OrderHeader.CustomerId.Value))
                 .GroupBy(oi => oi.OrderHeader.CustomerId)
                 .Select(g => new
@@ -544,7 +545,7 @@ public class ReportsController : Controller
 
             //var customerQuery = _context.Customers
             //    .AsNoTracking();
-            
+
             //var orderHeadersQuery = _context.OrderHeaders
             //    .AsNoTracking();
 
@@ -958,37 +959,191 @@ public class ReportsController : Controller
     }
 
     [HttpGet("SalesByPaymentType")] //return payment model
-    public async Task<IActionResult> SalesByPaymentTypeAsync(DateTime from, DateTime to, string branches = "all")
+    public async Task<IActionResult> SalesByPaymentTypeAsync(DateTime from, DateTime to, string branches = "all", string groupBy = "")
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
-        var result =
-        //#1 Start With workday table
-        await _context.OrderPayments.Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
-        .Select(x => new
+
+        if (Enum.TryParse<GroupBy>(groupBy, out GroupBy parsedGroupBy))
         {
-            Id = x.Payment.Id,
-            Name = x.Payment.Name,
-            Sname = x.Payment.Sname,
-            TotalAmount = x.OrderHeader.IsReturn ? 0 : x.Amount,
-            RefundAmount = x.OrderHeader.IsReturn ? x.Amount : 0,
-            //NetAmount = x.OrderHeader.IsReturn ? 0 : x.Amount,
-        })
-        .GroupBy(x => new { x.Id, x.Name, x.Sname }).Select(x => new SalesReportByPaymentModel
+            switch (parsedGroupBy)
+            {
+                case GroupBy.Branch:
+                    var X = new ReportWrapper()
+                    {
+                        Id = "PaymentTypeGroupByBranch",
+                        Types = new Dictionary<string, string>
+                        {
+                            ["id"] = "string",
+                            ["name"] = "string",
+                            ["sname"] = "string",
+                            ["branchId"] = "string",
+                            ["totalAmount"] = "num",
+                            ["refundAmount"] = "num",
+                            ["netAmount"] = "num"
+                        },
+                        Data = await _context.OrderPayments
+                            .Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+                            .GroupBy(x => new { x.PaymentId, x.Payment.Name, x.Payment.Sname, x.OrderHeader.BranchId, x.OrderHeader.IsReturn })
+                            .Select(x => new
+                            {
+                                Id = x.Key.PaymentId,
+                                Name = x.Key.Name,
+                                Sname = x.Key.Sname,
+                                BranchId = x.Key.BranchId,
+                                TotalAmount = x.Key.IsReturn ? 0 : x.Sum(x => x.Amount),
+                                RefundAmount = x.Key.IsReturn ? x.Sum(x => x.Amount) : 0,
+                                NetAmount = (x.Key.IsReturn ? 0 : x.Sum(x => x.Amount)) - (x.Key.IsReturn ? x.Sum(x => x.Amount) : 0)
+                            })
+                            .GroupBy(x => new { x.Id, x.Name, x.Sname, x.BranchId })
+                            .Select(x => new
+                            {
+                                Id = x.Key.Id,
+                                Name = x.Key.Name,
+                                Sname = x.Key.Sname,
+                                BranchId = x.Key.BranchId,
+                                TotalAmount = x.Sum(c => c.TotalAmount).ToString("N2"),
+                                RefundAmount = x.Sum(c => c.RefundAmount).ToString("N2"),
+                                NetAmount = (x.Sum(c => c.TotalAmount) - x.Sum(c => c.RefundAmount)).ToString("N2")
+                            })
+                            .OrderBy(x => x.Id)
+                            .ThenBy(x => x.BranchId)
+                            .ToListAsync()
+                    };
+                    return Ok(X);
+
+                case GroupBy.Date:
+                    return Ok(new ReportWrapper()
+                    {
+                        Id = "PaymentTypeGroupByDate",
+                        Types = new Dictionary<string, string>
+                        {
+                            ["id"] = "string",
+                            ["name"] = "string",
+                            ["sname"] = "string",
+                            ["date"] = "date",
+                            ["totalAmount"] = "num",
+                            ["refundAmount"] = "num",
+                            ["netAmount"] = "num"
+                        },
+                        Data = await _context.OrderPayments
+                                .Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+                                .GroupBy(x => new { x.PaymentId, x.Payment.Name, x.Payment.Sname, x.OrderHeader.WorkDay.Date, x.OrderHeader.IsReturn })
+                                .Select(x => new
+                                {
+                                    Id = x.Key.PaymentId,
+                                    Name = x.Key.Name,
+                                    Sname = x.Key.Sname,
+                                    Date = x.Key.Date,
+                                    TotalAmount = x.Key.IsReturn ? 0 : x.Sum(x => x.Amount),
+                                    RefundAmount = x.Key.IsReturn ? x.Sum(x => x.Amount) : 0,
+                                    NetAmount = (x.Key.IsReturn ? 0 : x.Sum(x => x.Amount)) - (x.Key.IsReturn ? x.Sum(x => x.Amount) : 0)
+                                })
+                                .GroupBy(x => new { x.Id, x.Name, x.Sname, x.Date })
+                                .Select(x => new
+                                {
+                                    Id = x.Key.Id,
+                                    Name = x.Key.Name,
+                                    Sname = x.Key.Sname,
+                                    Date = x.Key.Date,
+                                    TotalAmount = x.Sum(c => c.TotalAmount).ToString("N2"),
+                                    RefundAmount = x.Sum(c => c.RefundAmount).ToString("N2"),
+                                    NetAmount = (x.Sum(c => c.TotalAmount) - x.Sum(c => c.RefundAmount)).ToString("N2")
+                                })
+                                .OrderBy(x => x.Id)
+                                .ThenBy(x => x.Date)
+                                .ToListAsync()
+                    });
+
+                case GroupBy.BranchAndDate:
+                    return Ok(new ReportWrapper()
+                    {
+                        Id = "PaymentTypeGroupByBranchAndDate",
+                        Types = new Dictionary<string, string>
+                        {
+                            ["id"] = "string",
+                            ["name"] = "string",
+                            ["sname"] = "string",
+                            ["branchId"] = "string",
+                            ["date"] = "date",
+                            ["totalAmount"] = "num",
+                            ["refundAmount"] = "num",
+                            ["netAmount"] = "num"
+                        },
+                        Data = await _context.OrderPayments
+                                .Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+                                .GroupBy(x => new { x.PaymentId, x.Payment.Name, x.Payment.Sname, x.OrderHeader.WorkDay.Date, x.OrderHeader.BranchId, x.OrderHeader.IsReturn })
+                                .Select(x => new
+                                {
+                                    Id = x.Key.PaymentId,
+                                    Name = x.Key.Name,
+                                    Sname = x.Key.Sname,
+                                    BranchId = x.Key.BranchId,
+                                    Date = x.Key.Date,
+                                    TotalAmount = x.Key.IsReturn ? 0 : x.Sum(x => x.Amount),
+                                    RefundAmount = x.Key.IsReturn ? x.Sum(x => x.Amount) : 0,
+                                    NetAmount = (x.Key.IsReturn ? 0 : x.Sum(x => x.Amount)) - (x.Key.IsReturn ? x.Sum(x => x.Amount) : 0)
+                                })
+                                .GroupBy(x => new { x.Id, x.Name, x.Sname, x.BranchId, x.Date })
+                                .Select(x => new
+                                {
+                                    Id = x.Key.Id,
+                                    Name = x.Key.Name,
+                                    Sname = x.Key.Sname,
+                                    BranchId = x.Key.BranchId,
+                                    Date = x.Key.Date,
+                                    TotalAmount = x.Sum(c => c.TotalAmount).ToString("N2"),
+                                    RefundAmount = x.Sum(c => c.RefundAmount).ToString("N2"),
+                                    NetAmount = (x.Sum(c => c.TotalAmount) - x.Sum(c => c.RefundAmount)).ToString("N2")
+                                })
+                                .OrderBy(x => x.Id)
+                                .ThenBy(x => x.BranchId)
+                                .ThenBy(x => x.Date)
+                                .ToListAsync()
+                    });
+
+                default:
+                    break;
+            }
+        }
+
+        return Ok(new ReportWrapper()
         {
-            Id = x.Key.Id,
-            Name = x.Key.Name,
-            Sname = x.Key.Sname,
-            TotalAmount = x.Sum(c => c.TotalAmount).ToString("N2"),
-            RefundAmount = x.Sum(c => c.RefundAmount).ToString("N2"),
-            NetAmount = (x.Sum(c => c.TotalAmount) - x.Sum(c => c.RefundAmount)).ToString("N2")
-        })
-
-       //.OrderByDescending(x => x.NetAmount)
-
-       .AsNoTracking().ToListAsync();
-
-        return Ok(result);
+            Id = "PaymentType",
+            Types = new Dictionary<string, string>
+            {
+                ["id"] = "string",
+                ["name"] = "string",
+                ["sname"] = "string",
+                ["totalAmount"] = "num",
+                ["refundAmount"] = "num",
+                ["netAmount"] = "num"
+            },
+            Data = await _context.OrderPayments
+                        .Where(x => x.OrderHeader.VoidBy == null && x.OrderHeader.WorkDay.Date >= from.Date && x.OrderHeader.WorkDay.Date <= to.Date && (branches == "all" ? true : branches.Contains(x.OrderHeader.WorkDay.BranchId)))
+                        .GroupBy(x => new { x.PaymentId, x.Payment.Name, x.Payment.Sname, x.OrderHeader.IsReturn })
+                        .Select(x => new
+                        {
+                            Id = x.Key.PaymentId,
+                            Name = x.Key.Name,
+                            Sname = x.Key.Sname,
+                            TotalAmount = x.Key.IsReturn ? 0 : x.Sum(x => x.Amount),
+                            RefundAmount = x.Key.IsReturn ? x.Sum(x => x.Amount) : 0,
+                            NetAmount = (x.Key.IsReturn ? 0 : x.Sum(x => x.Amount)) - (x.Key.IsReturn ? x.Sum(x => x.Amount) : 0)
+                        })
+                        .GroupBy(x => new { x.Id, x.Name, x.Sname })
+                        .Select(x => new
+                        {
+                            Id = x.Key.Id,
+                            Name = x.Key.Name,
+                            Sname = x.Key.Sname,
+                            TotalAmount = x.Sum(c => c.TotalAmount).ToString("N2"),
+                            RefundAmount = x.Sum(c => c.RefundAmount).ToString("N2"),
+                            NetAmount = (x.Sum(c => c.TotalAmount) - x.Sum(c => c.RefundAmount)).ToString("N2")
+                        })
+                        .OrderBy(x => x.Id)
+                        .ToListAsync()
+        });
     }
 
 
