@@ -718,7 +718,6 @@ public class ReportsController : Controller
         return Ok(result);
     }
 
-
     [HttpGet("SalesByWorkDay")]
     public async Task<IActionResult> SalesByWorkDayAsync(DateTime from, DateTime to, string branches = "all")
     {
@@ -1146,7 +1145,6 @@ public class ReportsController : Controller
         });
     }
 
-
     [HttpGet("SalesByOrderSource")]
     public async Task<IActionResult> SalesByOrderSourceAsync(DateTime from, DateTime to, string branches = "all")
     {
@@ -1332,7 +1330,6 @@ public class ReportsController : Controller
 
         return Ok(result);
     }
-
 
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
