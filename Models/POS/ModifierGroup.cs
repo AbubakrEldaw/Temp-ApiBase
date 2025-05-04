@@ -9,6 +9,7 @@ namespace APIBase.Models.POS
     {
         public ModifierGroup()
         {
+            ItemModifierGroups = new HashSet<ItemModifierGroup>();
             ModifierGroupItems = new HashSet<ModifierGroupItem>();
             OrderItems = new HashSet<OrderItem>();
         }
@@ -22,6 +23,7 @@ namespace APIBase.Models.POS
         public bool Multiple { get; set; }
         public int OrderIndex { get; set; }
 
+        public virtual ICollection<ItemModifierGroup> ItemModifierGroups { get; set; }
         public virtual ICollection<ModifierGroupItem> ModifierGroupItems { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; }
     }

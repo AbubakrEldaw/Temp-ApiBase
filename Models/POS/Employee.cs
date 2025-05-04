@@ -50,6 +50,8 @@ namespace APIBase.Models.POS
             PaymentModifyByNavigations = new HashSet<Payment>();
             PosDeviceCreateByNavigations = new HashSet<PosDevice>();
             PosDeviceModifyByNavigations = new HashSet<PosDevice>();
+            PosPrinterCreateByNavigations = new HashSet<PosPrinter>();
+            PosPrinterModifyByNavigations = new HashSet<PosPrinter>();
             VatGroupCreateByNavigations = new HashSet<VatGroup>();
             VatGroupModifyByNavigations = new HashSet<VatGroup>();
             WorkDayCloseByNavigations = new HashSet<WorkDay>();
@@ -127,6 +129,8 @@ namespace APIBase.Models.POS
         public virtual ICollection<Payment> PaymentModifyByNavigations { get; set; }
         public virtual ICollection<PosDevice> PosDeviceCreateByNavigations { get; set; }
         public virtual ICollection<PosDevice> PosDeviceModifyByNavigations { get; set; }
+        public virtual ICollection<PosPrinter> PosPrinterCreateByNavigations { get; set; }
+        public virtual ICollection<PosPrinter> PosPrinterModifyByNavigations { get; set; }
         public virtual ICollection<VatGroup> VatGroupCreateByNavigations { get; set; }
         public virtual ICollection<VatGroup> VatGroupModifyByNavigations { get; set; }
         public virtual ICollection<WorkDay> WorkDayCloseByNavigations { get; set; }

@@ -13,8 +13,12 @@ namespace APIBase.Models.POS
             Areas = new HashSet<Area>();
             Employees = new HashSet<Employee>();
             IntegrationBranchLevels = new HashSet<IntegrationBranchLevel>();
+            ItemBranchPrices = new HashSet<ItemBranchPrice>();
+            ItemNotInBranches = new HashSet<ItemNotInBranch>();
+            KitchenPrintGroups = new HashSet<KitchenPrintGroup>();
             OrderHeaders = new HashSet<OrderHeader>();
             PosDevices = new HashSet<PosDevice>();
+            PosPrinters = new HashSet<PosPrinter>();
             WorkDays = new HashSet<WorkDay>();
         }
 
@@ -54,8 +58,12 @@ namespace APIBase.Models.POS
         public virtual ICollection<Area> Areas { get; set; }
         public virtual ICollection<Employee> Employees { get; set; }
         public virtual ICollection<IntegrationBranchLevel> IntegrationBranchLevels { get; set; }
+        public virtual ICollection<ItemBranchPrice> ItemBranchPrices { get; set; }
+        public virtual ICollection<ItemNotInBranch> ItemNotInBranches { get; set; }
+        public virtual ICollection<KitchenPrintGroup> KitchenPrintGroups { get; set; }
         public virtual ICollection<OrderHeader> OrderHeaders { get; set; }
         public virtual ICollection<PosDevice> PosDevices { get; set; }
+        public virtual ICollection<PosPrinter> PosPrinters { get; set; }
         public virtual ICollection<WorkDay> WorkDays { get; set; }
     }
 }

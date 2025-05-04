@@ -9,6 +9,8 @@ namespace APIBase.Models.POS
     {
         public Discount()
         {
+            DiscountCustomerGroups = new HashSet<DiscountCustomerGroup>();
+            ItemDiscounts = new HashSet<ItemDiscount>();
             OrderHeaders = new HashSet<OrderHeader>();
             OrderItems = new HashSet<OrderItem>();
         }
@@ -34,6 +36,8 @@ namespace APIBase.Models.POS
         public virtual DiscountType DiscountType { get; set; }
         public virtual Employee ModifyByNavigation { get; set; }
         public virtual Status Status { get; set; }
+        public virtual ICollection<DiscountCustomerGroup> DiscountCustomerGroups { get; set; }
+        public virtual ICollection<ItemDiscount> ItemDiscounts { get; set; }
         public virtual ICollection<OrderHeader> OrderHeaders { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; }
     }

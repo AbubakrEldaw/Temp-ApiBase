@@ -11,6 +11,13 @@ namespace APIBase.Models.POS
         {
             FeeItems = new HashSet<FeeItem>();
             InverseVariantParent = new HashSet<Item>();
+            ItemBranchPrices = new HashSet<ItemBranchPrice>();
+            ItemDiscounts = new HashSet<ItemDiscount>();
+            ItemModifierGroups = new HashSet<ItemModifierGroup>();
+            ItemModifierItems = new HashSet<ItemModifier>();
+            ItemModifierModifierItems = new HashSet<ItemModifier>();
+            ItemNotInBranches = new HashSet<ItemNotInBranch>();
+            KitchenPrintGroupItems = new HashSet<KitchenPrintGroupItem>();
             ModifierGroupItems = new HashSet<ModifierGroupItem>();
             OrderItemItems = new HashSet<OrderItem>();
             OrderItemVariants = new HashSet<OrderItem>();
@@ -61,6 +68,13 @@ namespace APIBase.Models.POS
         public virtual VatGroup VatGroup { get; set; }
         public virtual ICollection<FeeItem> FeeItems { get; set; }
         public virtual ICollection<Item> InverseVariantParent { get; set; }
+        public virtual ICollection<ItemBranchPrice> ItemBranchPrices { get; set; }
+        public virtual ICollection<ItemDiscount> ItemDiscounts { get; set; }
+        public virtual ICollection<ItemModifierGroup> ItemModifierGroups { get; set; }
+        public virtual ICollection<ItemModifier> ItemModifierItems { get; set; }
+        public virtual ICollection<ItemModifier> ItemModifierModifierItems { get; set; }
+        public virtual ICollection<ItemNotInBranch> ItemNotInBranches { get; set; }
+        public virtual ICollection<KitchenPrintGroupItem> KitchenPrintGroupItems { get; set; }
         public virtual ICollection<ModifierGroupItem> ModifierGroupItems { get; set; }
         public virtual ICollection<OrderItem> OrderItemItems { get; set; }
         public virtual ICollection<OrderItem> OrderItemVariants { get; set; }

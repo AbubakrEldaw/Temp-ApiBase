@@ -10,6 +10,7 @@ namespace APIBase.Models.POS
         public CustomerGroup()
         {
             CustomerCustomerGroups = new HashSet<CustomerCustomerGroup>();
+            DiscountCustomerGroups = new HashSet<DiscountCustomerGroup>();
         }
 
         public string Id { get; set; }
@@ -17,5 +18,6 @@ namespace APIBase.Models.POS
         public string Sname { get; set; }
 
         public virtual ICollection<CustomerCustomerGroup> CustomerCustomerGroups { get; set; }
+        public virtual ICollection<DiscountCustomerGroup> DiscountCustomerGroups { get; set; }
     }
 }

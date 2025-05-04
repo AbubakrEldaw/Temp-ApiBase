@@ -8,7 +8,6 @@ namespace APIBase.Models.POS
 {
     public partial class POSContext : DbContext
     {
-
         public virtual DbSet<AggrInfo> AggrInfos { get; set; }
         public virtual DbSet<AggrItemMapping> AggrItemMappings { get; set; }
         public virtual DbSet<Aggregator> Aggregators { get; set; }
@@ -30,6 +29,7 @@ namespace APIBase.Models.POS
         public virtual DbSet<DeliveryZone> DeliveryZones { get; set; }
         public virtual DbSet<DiningOption> DiningOptions { get; set; }
         public virtual DbSet<Discount> Discounts { get; set; }
+        public virtual DbSet<DiscountCustomerGroup> DiscountCustomerGroups { get; set; }
         public virtual DbSet<DiscountType> DiscountTypes { get; set; }
         public virtual DbSet<Employee> Employees { get; set; }
         public virtual DbSet<EmployeeGroup> EmployeeGroups { get; set; }
@@ -39,9 +39,17 @@ namespace APIBase.Models.POS
         public virtual DbSet<IntegrationBranchLevel> IntegrationBranchLevels { get; set; }
         public virtual DbSet<IntegrationDef> IntegrationDefs { get; set; }
         public virtual DbSet<Item> Items { get; set; }
+        public virtual DbSet<ItemBranchPrice> ItemBranchPrices { get; set; }
         public virtual DbSet<ItemCategory> ItemCategories { get; set; }
+        public virtual DbSet<ItemDiscount> ItemDiscounts { get; set; }
         public virtual DbSet<ItemDivision> ItemDivisions { get; set; }
         public virtual DbSet<ItemGroup> ItemGroups { get; set; }
+        public virtual DbSet<ItemModifier> ItemModifiers { get; set; }
+        public virtual DbSet<ItemModifierGroup> ItemModifierGroups { get; set; }
+        public virtual DbSet<ItemNotInBranch> ItemNotInBranches { get; set; }
+        public virtual DbSet<KitchenPrintGroup> KitchenPrintGroups { get; set; }
+        public virtual DbSet<KitchenPrintGroupItem> KitchenPrintGroupItems { get; set; }
+        public virtual DbSet<KitchenPrintGroupPosPrinter> KitchenPrintGroupPosPrinters { get; set; }
         public virtual DbSet<Menu> Menus { get; set; }
         public virtual DbSet<MenuGroup> MenuGroups { get; set; }
         public virtual DbSet<ModifierGroup> ModifierGroups { get; set; }
@@ -64,6 +72,7 @@ namespace APIBase.Models.POS
         public virtual DbSet<PermRolePerm> PermRolePerms { get; set; }
         public virtual DbSet<PosDevice> PosDevices { get; set; }
         public virtual DbSet<PosDeviceMenu> PosDeviceMenus { get; set; }
+        public virtual DbSet<PosPrinter> PosPrinters { get; set; }
         public virtual DbSet<Status> Statuses { get; set; }
         public virtual DbSet<SysFeature> SysFeatures { get; set; }
         public virtual DbSet<VatGroup> VatGroups { get; set; }
@@ -1301,6 +1310,33 @@ namespace APIBase.Models.POS
                     .HasConstraintName("FK_discount_status");
             });
 
+            modelBuilder.Entity<DiscountCustomerGroup>(entity =>
+            {
+                entity.HasKey(e => new { e.DiscountId, e.CustomerGroupId });
+
+                entity.ToTable("discount_customer_group", "def");
+
+                entity.Property(e => e.DiscountId)
+                    .HasMaxLength(20)
+                    .HasColumnName("discount_id");
+
+                entity.Property(e => e.CustomerGroupId)
+                    .HasMaxLength(20)
+                    .HasColumnName("customer_group_id");
+
+                entity.HasOne(d => d.CustomerGroup)
+                    .WithMany(p => p.DiscountCustomerGroups)
+                    .HasForeignKey(d => d.CustomerGroupId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_discount_customer_group_customer_group");
+
+                entity.HasOne(d => d.Discount)
+                    .WithMany(p => p.DiscountCustomerGroups)
+                    .HasForeignKey(d => d.DiscountId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_discount_customer_group_discount");
+            });
+
             modelBuilder.Entity<DiscountType>(entity =>
             {
                 entity.ToTable("discount_type", "def");
@@ -1844,6 +1880,36 @@ namespace APIBase.Models.POS
                     .HasConstraintName("FK_item_vat_group");
             });
 
+            modelBuilder.Entity<ItemBranchPrice>(entity =>
+            {
+                entity.HasKey(e => new { e.BranchId, e.ItemId });
+
+                entity.ToTable("item_branch_price", "def");
+
+                entity.Property(e => e.BranchId)
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.Property(e => e.Price)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("price");
+
+                entity.HasOne(d => d.Branch)
+                    .WithMany(p => p.ItemBranchPrices)
+                    .HasForeignKey(d => d.BranchId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_branch_price_branch");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemBranchPrices)
+                    .HasForeignKey(d => d.ItemId)
+                    .HasConstraintName("FK_item_branch_price_item");
+            });
+
             modelBuilder.Entity<ItemCategory>(entity =>
             {
                 entity.ToTable("item_category", "def");
@@ -1919,6 +1985,34 @@ namespace APIBase.Models.POS
                     .HasForeignKey(d => d.StatusId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_item_category_status");
+            });
+
+            modelBuilder.Entity<ItemDiscount>(entity =>
+            {
+                entity.HasKey(e => new { e.DiscountId, e.ItemId })
+                    .HasName("PK_discount_item");
+
+                entity.ToTable("item_discount", "def");
+
+                entity.Property(e => e.DiscountId)
+                    .HasMaxLength(20)
+                    .HasColumnName("discount_id");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.HasOne(d => d.Discount)
+                    .WithMany(p => p.ItemDiscounts)
+                    .HasForeignKey(d => d.DiscountId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_discount_discount");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemDiscounts)
+                    .HasForeignKey(d => d.ItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_discount_item");
             });
 
             modelBuilder.Entity<ItemDivision>(entity =>
@@ -2043,6 +2137,182 @@ namespace APIBase.Models.POS
                     .HasForeignKey(d => d.StatusId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_item_group_status");
+            });
+
+            modelBuilder.Entity<ItemModifier>(entity =>
+            {
+                entity.HasKey(e => new { e.ItemId, e.ModifierItemId });
+
+                entity.ToTable("item_modifier", "def");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.Property(e => e.ModifierItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("modifier_item_id");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemModifierItems)
+                    .HasForeignKey(d => d.ItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_modifier_item_item");
+
+                entity.HasOne(d => d.ModifierItem)
+                    .WithMany(p => p.ItemModifierModifierItems)
+                    .HasForeignKey(d => d.ModifierItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_modifier_item_modifier");
+            });
+
+            modelBuilder.Entity<ItemModifierGroup>(entity =>
+            {
+                entity.HasKey(e => new { e.ItemId, e.ModifierGroupId });
+
+                entity.ToTable("item_modifier_group", "def");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.Property(e => e.ModifierGroupId)
+                    .HasMaxLength(20)
+                    .HasColumnName("modifier_group_id");
+
+                entity.Property(e => e.Free).HasColumnName("free");
+
+                entity.Property(e => e.Max).HasColumnName("max");
+
+                entity.Property(e => e.Min).HasColumnName("min");
+
+                entity.Property(e => e.Multiple).HasColumnName("multiple");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemModifierGroups)
+                    .HasForeignKey(d => d.ItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_modifier_group_item");
+
+                entity.HasOne(d => d.ModifierGroup)
+                    .WithMany(p => p.ItemModifierGroups)
+                    .HasForeignKey(d => d.ModifierGroupId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_modifier_group_modifier_group");
+            });
+
+            modelBuilder.Entity<ItemNotInBranch>(entity =>
+            {
+                entity.HasKey(e => new { e.ItemId, e.BranchId });
+
+                entity.ToTable("item_not_in_branch", "def");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.Property(e => e.BranchId)
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.HasOne(d => d.Branch)
+                    .WithMany(p => p.ItemNotInBranches)
+                    .HasForeignKey(d => d.BranchId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_not_in_branch_branch");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemNotInBranches)
+                    .HasForeignKey(d => d.ItemId)
+                    .HasConstraintName("FK_item_not_in_branch_item");
+            });
+
+            modelBuilder.Entity<KitchenPrintGroup>(entity =>
+            {
+                entity.ToTable("kitchen_print_group", "def");
+
+                entity.Property(e => e.Id)
+                    .HasMaxLength(20)
+                    .HasColumnName("id");
+
+                entity.Property(e => e.AdvancedRouting).HasColumnName("advanced_routing");
+
+                entity.Property(e => e.BranchId)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("name");
+
+                entity.Property(e => e.PrintLanguage).HasColumnName("print_language");
+
+                entity.Property(e => e.Sname)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("sname")
+                    .HasDefaultValueSql("('')");
+
+                entity.HasOne(d => d.Branch)
+                    .WithMany(p => p.KitchenPrintGroups)
+                    .HasForeignKey(d => d.BranchId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_kitchen_print_group_branch");
+            });
+
+            modelBuilder.Entity<KitchenPrintGroupItem>(entity =>
+            {
+                entity.HasKey(e => new { e.KitchenPrintGroupId, e.ItemId });
+
+                entity.ToTable("kitchen_print_group_item", "def");
+
+                entity.Property(e => e.KitchenPrintGroupId)
+                    .HasMaxLength(20)
+                    .HasColumnName("kitchen_print_group_id");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.KitchenPrintGroupItems)
+                    .HasForeignKey(d => d.ItemId)
+                    .HasConstraintName("FK_kitchen_print_group_item_item");
+
+                entity.HasOne(d => d.KitchenPrintGroup)
+                    .WithMany(p => p.KitchenPrintGroupItems)
+                    .HasForeignKey(d => d.KitchenPrintGroupId)
+                    .HasConstraintName("FK_kitchen_print_group_item_kitchen_print_group");
+            });
+
+            modelBuilder.Entity<KitchenPrintGroupPosPrinter>(entity =>
+            {
+                entity.HasKey(e => new { e.KitchenPrintGroupId, e.PosPrinterId })
+                    .HasName("PK_pos_printer_kitchen_group");
+
+                entity.ToTable("kitchen_print_group_pos_printer", "def");
+
+                entity.Property(e => e.KitchenPrintGroupId)
+                    .HasMaxLength(20)
+                    .HasColumnName("kitchen_print_group_id");
+
+                entity.Property(e => e.PosPrinterId)
+                    .HasMaxLength(20)
+                    .HasColumnName("pos_printer_id");
+
+                entity.HasOne(d => d.KitchenPrintGroup)
+                    .WithMany(p => p.KitchenPrintGroupPosPrinters)
+                    .HasForeignKey(d => d.KitchenPrintGroupId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_kitchen_group_pos_printer_kitchen_print_group");
+
+                entity.HasOne(d => d.PosPrinter)
+                    .WithMany(p => p.KitchenPrintGroupPosPrinters)
+                    .HasForeignKey(d => d.PosPrinterId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_kitchen_group_pos_printer_pos_printer");
             });
 
             modelBuilder.Entity<Menu>(entity =>
@@ -3510,6 +3780,74 @@ namespace APIBase.Models.POS
                     .WithMany(p => p.PosDeviceMenus)
                     .HasForeignKey(d => d.PosDeviceId)
                     .HasConstraintName("FK_pos_device_menu_pos_device");
+            });
+
+            modelBuilder.Entity<PosPrinter>(entity =>
+            {
+                entity.ToTable("pos_printer", "def");
+
+                entity.Property(e => e.Id)
+                    .HasMaxLength(20)
+                    .HasColumnName("id");
+
+                entity.Property(e => e.BranchId)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.CreateAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("create_at")
+                    .HasDefaultValueSql("(getutcdate())");
+
+                entity.Property(e => e.CreateBy)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("create_by");
+
+                entity.Property(e => e.Model)
+                    .HasMaxLength(20)
+                    .HasColumnName("model");
+
+                entity.Property(e => e.ModifyAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("modify_at");
+
+                entity.Property(e => e.ModifyBy)
+                    .HasMaxLength(20)
+                    .HasColumnName("modify_by");
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("name");
+
+                entity.Property(e => e.PrinterName)
+                    .HasMaxLength(50)
+                    .HasColumnName("printer_name");
+
+                entity.Property(e => e.Sname)
+                    .HasMaxLength(50)
+                    .HasColumnName("sname");
+
+                entity.Property(e => e.TcpIp)
+                    .HasMaxLength(50)
+                    .HasColumnName("tcp_ip");
+
+                entity.HasOne(d => d.Branch)
+                    .WithMany(p => p.PosPrinters)
+                    .HasForeignKey(d => d.BranchId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_pos_printer_branch");
+
+                entity.HasOne(d => d.CreateByNavigation)
+                    .WithMany(p => p.PosPrinterCreateByNavigations)
+                    .HasForeignKey(d => d.CreateBy)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+
+                entity.HasOne(d => d.ModifyByNavigation)
+                    .WithMany(p => p.PosPrinterModifyByNavigations)
+                    .HasForeignKey(d => d.ModifyBy);
             });
 
             modelBuilder.Entity<Status>(entity =>
