@@ -3,6 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using APIBase.Models.POS;
 using Microsoft.AspNetCore.Authorization;
 using APIBase.Helpers;
+using APIBase.Models.CustomModels;
+using System.Xml.Linq;
+using Newtonsoft.Json;
+using APIBase.Models.Enums;
+using APIBase.Models;
 
 namespace APIBase.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
@@ -54,7 +59,7 @@ public class ItemsController : ControllerBase
         return deletedItems;
     }
 
-  
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Item>> GetItem(string id)
     {
@@ -69,10 +74,10 @@ public class ItemsController : ControllerBase
     }
 
 
- 
-  
 
-  
+   
+
+
     [HttpGet("Modifiers")]
     public async Task<ActionResult<Item>> GetModifiers()
     {
@@ -777,7 +782,7 @@ public class ItemsController : ControllerBase
 
     }
 
- 
+
     [Authorize(Roles = "Console, prm-items")]
     [HttpPut("Restore/{id}")]
     public async Task<ActionResult<Item>> RestoreItem(string id)
@@ -862,6 +867,69 @@ public class ItemsController : ControllerBase
         {
             return NotFound();
         }
+    }
+
+    [HttpGet("GetNutritionFacts/{id}")]
+    public async Task<ActionResult<Item>> GetNutritionFactsAsync(string id)
+    {
+        Item? item = await _context.Items
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (item == null)
+        {
+            return NotFound();
+        }
+
+        ItemSummary itemSummary = new()
+        {
+            Id = item.Id,
+            Name = item.Name,
+            Sname = item.Sname,
+            NutritionFacts = item?.Nutrition != null
+                    ? JsonConvert.DeserializeObject<NutritionFacts>(item.Nutrition) ?? new NutritionFacts()
+                    : new NutritionFacts()
+        };
+
+        return Ok(itemSummary);
+    }
+
+    [HttpGet("Allergens")]
+    public ActionResult<List<LocalizedName>> GetAllergensAsync()
+    {
+        return Enum.GetValues(typeof(AllergenType))
+         .Cast<AllergenType>()
+         .Select(e =>
+         {
+             var fieldInfo = e.GetType().GetField(e.ToString());
+             var arabicName = fieldInfo?.GetCustomAttributes(typeof(ArabicNameAttribute), false)
+                             .FirstOrDefault() as ArabicNameAttribute;
+
+             return new LocalizedName
+             {
+                 Name = e.ToString(),
+                 Sname = arabicName?.ArabicName ?? string.Empty
+             };
+         })
+         .ToList();
+    }
+
+    //[Authorize(Roles = "Console, prm-items")]
+    [HttpPut("UpdateNutritionFacts")]
+    public async Task<ActionResult> UpdateNutritionFacts([FromBody] ItemSummary model)
+    {
+        Item? item = await _context.Items
+           .FirstOrDefaultAsync(i => i.Id == model.Id);
+
+        if (item == null)
+        {
+            return NotFound();
+        }
+
+        item.Nutrition = JsonConvert.SerializeObject(model.NutritionFacts);
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
 
     private string CreateImage(string ImagePath, string id, string base64string)

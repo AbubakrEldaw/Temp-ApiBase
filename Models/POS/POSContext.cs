@@ -1781,6 +1781,8 @@ namespace APIBase.Models.POS
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
+                entity.Property(e => e.Nutrition).HasColumnName("nutrition");
+
                 entity.Property(e => e.Price)
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("price");
