@@ -8,6 +8,8 @@ using System.Xml.Linq;
 using Newtonsoft.Json;
 using APIBase.Models.Enums;
 using APIBase.Models;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace APIBase.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
@@ -32,6 +34,7 @@ public class ItemsController : ControllerBase
     {
         return await _context.Items.Where(x => x.VariantParentId == null && x.StatusId != "st-deleted").Include(x => x.InverseVariantParent.Where(x => x.StatusId != "st-deleted")).Include(x => x.ItemDivision).Include(x => x.ItemCategory).Include(x => x.ItemGroup).Include(x => x.VatGroup).Include(x => x.Status).Include(x => x.ItemModifierItems).Include(x => x.ItemNotInBranches).Include(x => x.ItemBranchPrices).Include(x => x.KitchenPrintGroupItems).AsNoTracking().ToListAsync();
     }
+
 
     [HttpGet("GetDeletedItems")]
     public async Task<ActionResult<IEnumerable<Item>>> GetDeletedItems()
@@ -75,7 +78,7 @@ public class ItemsController : ControllerBase
 
 
 
-   
+
 
 
     [HttpGet("Modifiers")]
@@ -869,6 +872,30 @@ public class ItemsController : ControllerBase
         }
     }
 
+    [HttpGet("GetItemsForNutritionFacts")]
+    public async Task<ActionResult<IEnumerable<Item>>> GetItemsForNutritionFacts()
+    {
+        var items = await _context.Items
+            .Where(x => x.StatusId != "st-deleted")
+            .Where(x => !_context.Items.Any(y => y.VariantParentId == x.Id))
+            .Include(x => x.VariantParent)
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var item in items)
+        {
+            if (item.VariantParent != null)
+            {
+                item.Name = $"{item.VariantParent.Name} - {item.Name}";
+            }
+        }
+
+        return items
+            .OrderBy(x => x.Name)
+            .ThenBy(x => x.Id)
+            .ToList();
+    }
+
     [HttpGet("GetNutritionFacts/{id}")]
     public async Task<ActionResult<Item>> GetNutritionFactsAsync(string id)
     {
@@ -914,9 +941,49 @@ public class ItemsController : ControllerBase
          .ToList();
     }
 
-    //[Authorize(Roles = "Console, prm-items")]
+    [Authorize(Roles = "Console, prm-items")]
     [HttpPut("UpdateNutritionFacts")]
-    public async Task<ActionResult> UpdateNutritionFacts([FromBody] ItemSummary model)
+    public async Task<ActionResult> UpdateNutritionFacts([FromBody] List<ItemSummary> model)
+    {
+        try
+        {
+            var items = model
+                .Where(item => item.Id != null && !string.IsNullOrWhiteSpace(item.Id))
+                .Select(item => new
+                {
+                    item.Id,
+                    Nutrition = JsonConvert.SerializeObject(item.NutritionFacts) // serialize nested object to string
+                });
+
+            var json = JsonConvert.SerializeObject(items);
+
+            var jsonParam = new SqlParameter("@json", SqlDbType.NVarChar)
+            {
+                Value = json
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(@"
+                UPDATE i
+                SET i.Nutrition = j.Nutrition
+                FROM [def].[item] i
+                LEFT JOIN OPENJSON(@json)
+                WITH (
+                    Id NVARCHAR(100),
+                    Nutrition NVARCHAR(MAX)
+                ) j ON i.Id = j.Id
+            ", jsonParam);
+
+            return Ok();
+        }
+        catch (Exception)
+        {
+            return BadRequest();
+        }
+    }
+
+    [Authorize(Roles = "Console, prm-items")]
+    [HttpPut("UploadNutritionFacts")]
+    public async Task<ActionResult> UploadNutritionFacts([FromBody] ItemSummary model)
     {
         Item? item = await _context.Items
            .FirstOrDefaultAsync(i => i.Id == model.Id);

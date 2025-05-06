@@ -16,7 +16,7 @@ namespace APIBase.Models.CustomModels
         public CoreNutrition Core { get; set; } = new CoreNutrition();
         public Fats Fats { get; set; } = new Fats();
         public Carbs Carbs { get; set; } = new Carbs();
-        public List<AllergenType> Allergens { get; set; } = new List<AllergenType>();
+        public List<string> Allergens { get; set; } = new List<string>();
     }
 
     public class CoreNutrition
@@ -52,6 +52,6 @@ namespace APIBase.Models.CustomModels
     {
         //public string Name { get; set; }
         public double Amount { get; set; } = 0;
-        public MeasurementUnit Unit { get; set; }
+        public string Unit { get; set; } = "g";
     }
 }
