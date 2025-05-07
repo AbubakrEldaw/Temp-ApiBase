@@ -948,11 +948,10 @@ public class ItemsController : ControllerBase
         try
         {
             var items = model
-                .Where(item => item.Id != null && !string.IsNullOrWhiteSpace(item.Id))
                 .Select(item => new
                 {
                     item.Id,
-                    Nutrition = JsonConvert.SerializeObject(item.NutritionFacts) // serialize nested object to string
+                    Nutrition = JsonConvert.SerializeObject(item.NutritionFacts)
                 });
 
             var json = JsonConvert.SerializeObject(items);
@@ -962,18 +961,18 @@ public class ItemsController : ControllerBase
                 Value = json
             };
 
-            await _context.Database.ExecuteSqlRawAsync(@"
+            int rowsAffected = await _context.Database.ExecuteSqlRawAsync(@"
                 UPDATE i
                 SET i.Nutrition = j.Nutrition
                 FROM [def].[item] i
-                LEFT JOIN OPENJSON(@json)
+                INNER JOIN OPENJSON(@json)
                 WITH (
                     Id NVARCHAR(100),
                     Nutrition NVARCHAR(MAX)
                 ) j ON i.Id = j.Id
             ", jsonParam);
 
-            return Ok();
+            return Ok(rowsAffected);
         }
         catch (Exception)
         {
