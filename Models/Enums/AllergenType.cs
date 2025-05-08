@@ -5,43 +5,43 @@
         [ArabicName("الحبوب")]
         Cereals,
 
-        [ArabicName("القشريات ومنتجاتها")]
+        [ArabicName("القشريات")]
         Crustaceans,
 
-        [ArabicName("البيض ومنتجاته")]
+        [ArabicName("البيض")]
         Eggs,
 
-        [ArabicName("الخردل ومنتجاته")]
+        [ArabicName("الخردل")]
         Mustard,
 
-        [ArabicName("بذور السمسم ومنتجاتها")]
+        [ArabicName("بذور السمسم")]
         SesameSeeds,
 
-        [ArabicName("الترمس (اللوبيين) ومنتجاته")]
+        [ArabicName("الترمس")]
         Lupin,
 
-        [ArabicName("فول الصويا ومنتجاتها")]
+        [ArabicName("فول الصويا")]
         Soybeans,
 
-        [ArabicName("الرخويات ومنتجاتها")]
+        [ArabicName("الرخويات")]
         Molluscs,
 
-        [ArabicName("الأسماك ومنتجاتها")]
+        [ArabicName("الأسماك")]
         Fish,
 
-        [ArabicName("الفول السوداني ومنتجاتها")]
+        [ArabicName("الفول السوداني")]
         Peanuts,
 
-        [ArabicName("المكسرات ومنتجاتها")]
+        [ArabicName("المكسرات")]
         Nuts,
 
-        [ArabicName("الحليب ومنتجاته")]
+        [ArabicName("الحليب")]
         Milk,
 
         [ArabicName("الكرفس")]
         Celery,
 
-        [ArabicName("الكبريتيت ومنتجاته")]
+        [ArabicName("الكبريتيت")]
         SulphurDioxide
     }
 

@@ -872,6 +872,64 @@ public class ItemsController : ControllerBase
         }
     }
 
+    // new stuff
+    [Authorize(Roles = "Console, prm-items")]
+    [HttpPut("UploadItemsForAppSync")]
+    public async Task<ActionResult<int>> UploadItemsForAppSync([FromBody] List<Item> model)
+    {
+        var items = model.Select(item => new
+        {
+            id = item.Id,
+            name = item.Name ?? "",
+            sname = item.Sname ?? "",
+            description = item.Description ?? "",
+            sdescription = item.Sdescription ?? ""
+        });
+
+        var json = JsonConvert.SerializeObject(items);
+
+        var jsonParam = new SqlParameter("@json", SqlDbType.NVarChar)
+        {
+            Value = json
+        };
+
+        int rowsAffected = await _context.Database.ExecuteSqlRawAsync(@"
+                UPDATE i
+                SET i.name = j.name, i.sname = j.sname, i.description = j.description, i.sdescription = j.sdescription
+                FROM [def].[item] i
+                INNER JOIN OPENJSON(@json)
+                WITH (
+                    id NVARCHAR(50),
+                    name NVARCHAR(50),
+                    sname NVARCHAR(50),
+                    description NVARCHAR(MAX),
+                    sdescription NVARCHAR(MAX)
+                ) j ON i.id = j.id
+            ", jsonParam);
+
+        return rowsAffected;
+    }
+
+    [HttpGet("Allergens")]
+    public ActionResult<List<LocalizedName>> GetAllergensAsync()
+    {
+        return Enum.GetValues(typeof(AllergenType))
+         .Cast<AllergenType>()
+         .Select(e =>
+         {
+             var fieldInfo = e.GetType().GetField(e.ToString());
+             var arabicName = fieldInfo?.GetCustomAttributes(typeof(ArabicNameAttribute), false)
+                             .FirstOrDefault() as ArabicNameAttribute;
+
+             return new LocalizedName
+             {
+                 Name = e.ToString(),
+                 Sname = arabicName?.ArabicName ?? string.Empty
+             };
+         })
+         .ToList();
+    }
+
     [HttpGet("GetItemsForNutritionFacts")]
     public async Task<ActionResult<IEnumerable<Item>>> GetItemsForNutritionFacts()
     {
@@ -896,8 +954,8 @@ public class ItemsController : ControllerBase
             .ToList();
     }
 
-    [HttpGet("GetNutritionFacts/{id}")]
-    public async Task<ActionResult<Item>> GetNutritionFactsAsync(string id)
+    [HttpGet("GetItemNutritionFacts/{id}")]
+    public async Task<ActionResult<ItemSummary>> GetItemNutritionFactsAsync(string id)
     {
         Item? item = await _context.Items
             .AsNoTracking()
@@ -918,32 +976,12 @@ public class ItemsController : ControllerBase
                     : new NutritionFacts()
         };
 
-        return Ok(itemSummary);
-    }
-
-    [HttpGet("Allergens")]
-    public ActionResult<List<LocalizedName>> GetAllergensAsync()
-    {
-        return Enum.GetValues(typeof(AllergenType))
-         .Cast<AllergenType>()
-         .Select(e =>
-         {
-             var fieldInfo = e.GetType().GetField(e.ToString());
-             var arabicName = fieldInfo?.GetCustomAttributes(typeof(ArabicNameAttribute), false)
-                             .FirstOrDefault() as ArabicNameAttribute;
-
-             return new LocalizedName
-             {
-                 Name = e.ToString(),
-                 Sname = arabicName?.ArabicName ?? string.Empty
-             };
-         })
-         .ToList();
+        return itemSummary;
     }
 
     [Authorize(Roles = "Console, prm-items")]
     [HttpPut("UpdateNutritionFacts")]
-    public async Task<ActionResult> UpdateNutritionFacts([FromBody] List<ItemSummary> model)
+    public async Task<ActionResult<int>> UpdateNutritionFacts([FromBody] List<ItemSummary> model)
     {
         try
         {
@@ -972,30 +1010,12 @@ public class ItemsController : ControllerBase
                 ) j ON i.Id = j.Id
             ", jsonParam);
 
-            return Ok(rowsAffected);
+            return rowsAffected;
         }
         catch (Exception)
         {
             return BadRequest();
         }
-    }
-
-    [Authorize(Roles = "Console, prm-items")]
-    [HttpPut("UploadNutritionFacts")]
-    public async Task<ActionResult> UploadNutritionFacts([FromBody] ItemSummary model)
-    {
-        Item? item = await _context.Items
-           .FirstOrDefaultAsync(i => i.Id == model.Id);
-
-        if (item == null)
-        {
-            return NotFound();
-        }
-
-        item.Nutrition = JsonConvert.SerializeObject(model.NutritionFacts);
-        await _context.SaveChangesAsync();
-
-        return Ok();
     }
 
     private string CreateImage(string ImagePath, string id, string base64string)
