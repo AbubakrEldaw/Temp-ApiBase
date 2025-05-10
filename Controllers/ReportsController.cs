@@ -1331,6 +1331,26 @@ public class ReportsController : Controller
         return Ok(result);
     }
 
+    [HttpGet("ApiOrders")]
+    public async Task<IActionResult> ApiOrders(DateTime from, DateTime to, string branches = "all")
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+
+        var result = await _context.ApiOrders
+            .Where
+            (
+                x => 
+                    x.AppOrderReceiveDatetime >= from.Date && 
+                    x.AppOrderReceiveDatetime <= to.Date && 
+                    (branches == "all" ? true : branches.Contains(x.BranchId))
+            )
+            // todo: remove
+            .Take(100)
+            .ToListAsync();
+
+        return Ok(result);
+    }
+
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
 
