@@ -33,20 +33,28 @@ public class ApiOrdersController : ControllerBase
 
     // todo: handle admin and stuff
     [HttpGet("{id}")]
-    public async Task<ActionResult<OrderHeader>> GetApiOrder(string id)
+    public async Task<IActionResult> GetApiOrder(string id)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
-
         try
         {
-            var apiOrder = await _context.ApiOrders.Where(x => x.Id == Guid.Parse(id))
+            var apiOrder = await _context.ApiOrders
+                .Where(x => x.Id == Guid.Parse(id))
                 .Include(x => x.StagingStatus)
                 .Include(x => x.ApiOrderStatusHistories)
+                .ThenInclude(x => x.ApiStatus)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (apiOrder == null)
                 return NoContent();
+
+            if (apiOrder?.ApiOrderStatusHistories != null)
+            {
+                apiOrder.ApiOrderStatusHistories = apiOrder.ApiOrderStatusHistories
+                    .OrderByDescending(h => h.ApiStatusId)
+                    .ThenByDescending(h => h.StatusTime)
+                    .ToList();
+            }
 
             OrderHeader? orderHeader = JsonConvert.DeserializeObject<OrderHeader>(apiOrder.OrderModel);
 
@@ -55,22 +63,49 @@ public class ApiOrdersController : ControllerBase
                 return NoContent();
             }
 
+
+            DiningOption? diningOption = await _context.DiningOptions
+                .Where(x => x.Id == orderHeader.DiningOptionId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+            
+            OrderSource? orderSource = await _context.OrderSources
+                .Where(x => x.Id == orderHeader.OrderSourceId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
             ApiOrderSummary response = new () {
                 ApiOrder = apiOrder,
+                DiningOption = new Models.LocalizedName()
+                {
+                    Name = diningOption?.Name,
+                    Sname = diningOption?.Sname
+                },
+                OrderSource = new Models.LocalizedName()
+                {
+                    Name = orderSource?.Name,
+                    Sname = orderSource?.Sname
+                },
                 Items = orderHeader.OrderItems.Select(oi => new OrderItemSummary ()
                 {
                     Quantity = oi.Quantity,
                     Price = oi.Price,
                     Total = oi.Total,
                     DiscountAmount = oi.DiscountAmount,
-                    Name = oi.Item.Name,
-                    Sname = oi.Item.Sname,
+                    Name = new Models.LocalizedName()
+                    {
+                        Name = oi.Item.Name,
+                        Sname = oi.Item.Sname,
+                    }
                 })
                 .ToList(),
+                Note = orderHeader.Note,
+                DiscountAmount = orderHeader.HeaderDiscountAmount,
+                VatAmount = orderHeader.TotalVat,
+                Total= orderHeader.Total,
             };
 
-            // admin perms
-            if (!true)
+            if (!User.IsInRole("admin"))
             {
                 response.ApiOrder.OrderModel = null;
             }

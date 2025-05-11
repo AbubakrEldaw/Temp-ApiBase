@@ -7,6 +7,12 @@ namespace APIBase.Models.DTOs.ApiOrder
     {
         public POS.ApiOrder ApiOrder { get; set; }
         public List<OrderItemSummary> Items { get; set; }
+        public LocalizedName DiningOption { get; set; }
+        public LocalizedName OrderSource { get; set; }
+        public string Note { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal VatAmount { get; set; }
+        public decimal Total { get; set; }
     }
 
     public class OrderItemSummary
@@ -15,8 +21,8 @@ namespace APIBase.Models.DTOs.ApiOrder
         public decimal Price { get; set; }
         public decimal Total { get; set; }
         public decimal DiscountAmount { get; set; }
-        public string Name { get; set; }
-        public string Sname { get; set; }
+        public LocalizedName Name { get; set; }
+
     }
 
 }
