@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using APIBase.Models.Enums;
 
 namespace APIBase.Services
 {
@@ -182,8 +183,20 @@ namespace APIBase.Services
                     .Select(x => x.MarketPlaceAppId)
                     .ToList();
 
+                var paidCompanyApps = _MasterContext.TransactionLines
+                        .Where
+                        (
+                            trnLine =>
+                                trnLine.Transaction.CompanyId == user.CompanyId &&
+                                trnLine.Transaction.Status == TransactionStatus.Paid.ToString() &&
+                                trnLine.Type == TransactionLineTypes.App.ToString() &&
+                                trnLine.EndDate == _plan.EndDate
+                        )
+                        .Select(trnLine => trnLine.ReferenceId)
+                        .ToList();
+
                 var companyApps = _MasterContext.CompanyApps
-                    .Where(x => x.CompanyId == user.CompanyId)
+                    .Where(x => x.CompanyId == user.CompanyId && paidCompanyApps.Contains(x.MarketPlaceAppId))
                     .Select(x => x.MarketPlaceAppId)
                     .ToList();
 
