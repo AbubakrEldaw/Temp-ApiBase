@@ -1337,15 +1337,14 @@ public class ReportsController : Controller
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
         var result = await _context.ApiOrders
-            // todo: fix
-            .Take(30)
-            //.Where
-            //(
-            //    x => 
-            //        x.AppOrderReceiveDatetime >= from.Date && 
-            //        x.AppOrderReceiveDatetime <= to.Date && 
-            //        (branches == "all" ? true : branches.Contains(x.BranchId))
-            //)
+            .Include(o => o.StagingStatus)
+            .Where
+            (
+                x =>
+                    x.AppOrderReceiveDatetime >= from.Date &&
+                    x.AppOrderReceiveDatetime <= to.Date &&
+                    (branches == "all" ? true : branches.Contains(x.BranchId))
+            )
             .ToListAsync();
 
         return Ok(result);

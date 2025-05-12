@@ -31,7 +31,6 @@ public class ApiOrdersController : ControllerBase
         _encMaster = encMaster;
     }
 
-    // todo: handle admin and stuff
     [HttpGet("{id}")]
     public async Task<IActionResult> GetApiOrder(string id)
     {
@@ -41,7 +40,7 @@ public class ApiOrdersController : ControllerBase
                 .Where(x => x.Id == Guid.Parse(id))
                 .Include(x => x.StagingStatus)
                 .Include(x => x.ApiOrderStatusHistories)
-                .ThenInclude(x => x.ApiStatus)
+                    .ThenInclude(x => x.ApiStatus)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
@@ -56,53 +55,56 @@ public class ApiOrdersController : ControllerBase
                     .ToList();
             }
 
-            OrderHeader? orderHeader = JsonConvert.DeserializeObject<OrderHeader>(apiOrder.OrderModel);
+            Guid? orderHeaderId = JsonConvert.DeserializeObject<OrderHeader>(apiOrder.OrderModel)?.Id;
+
+            if (orderHeaderId == null)
+            {
+                return NoContent();
+            }
+
+
+            OrderHeader? orderHeader = await _context.OrderHeaders
+                .Where(oh => oh.Id == orderHeaderId.Value)
+                .Include(oh => oh.OrderItems)
+                .Include(oh => oh.DiningOption)
+                .Include(oh => oh.OrderSource)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
 
             if (orderHeader == null)
             {
                 return NoContent();
             }
 
-
-            DiningOption? diningOption = await _context.DiningOptions
-                .Where(x => x.Id == orderHeader.DiningOptionId)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-            
-            OrderSource? orderSource = await _context.OrderSources
-                .Where(x => x.Id == orderHeader.OrderSourceId)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            ApiOrderSummary response = new () {
+            ApiOrderSummary response = new()
+            {
                 ApiOrder = apiOrder,
                 DiningOption = new Models.LocalizedName()
                 {
-                    Name = diningOption?.Name,
-                    Sname = diningOption?.Sname
+                    Name = orderHeader.DiningOption.Name,
+                    Sname = orderHeader.DiningOption.Sname
                 },
                 OrderSource = new Models.LocalizedName()
                 {
-                    Name = orderSource?.Name,
-                    Sname = orderSource?.Sname
+                    Name = orderHeader.OrderSource.Name,
+                    Sname = orderHeader.OrderSource.Sname
                 },
-                Items = orderHeader.OrderItems.Select(oi => new OrderItemSummary ()
+                Items = orderHeader.OrderItems.Select(oi => new OrderItemSummary()
                 {
                     Quantity = oi.Quantity,
                     Price = oi.Price,
                     Total = oi.Total,
-                    DiscountAmount = oi.DiscountAmount,
                     Name = new Models.LocalizedName()
                     {
-                        Name = oi.Item.Name,
-                        Sname = oi.Item.Sname,
+                        Name = oi.Item?.Name ?? "",
+                        Sname = oi.Item?.Sname ?? "",
                     }
                 })
                 .ToList(),
                 Note = orderHeader.Note,
                 DiscountAmount = orderHeader.HeaderDiscountAmount,
                 VatAmount = orderHeader.TotalVat,
-                Total= orderHeader.Total,
+                Total = orderHeader.Total,
             };
 
             if (!User.IsInRole("admin"))

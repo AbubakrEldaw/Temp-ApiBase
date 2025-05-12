@@ -15,7 +15,7 @@ namespace APIBase.Services
     public interface IUserService
     {
         AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress);
-         Task<AuthenticateResponse> RefreshToken(string token, string ipAddress);
+        Task<AuthenticateResponse> RefreshToken(string token, string ipAddress);
         bool RevokeToken(string token, string ipAddress);
         IEnumerable<User> GetAll();
         User GetById(int id);
@@ -176,6 +176,23 @@ namespace APIBase.Services
                 {
                     claims.AddClaim(new Claim(ClaimTypes.Role, feature.FeatureId));
                 }
+
+                var planApps = _MasterContext.MarketPlaceAppPlanAvailabilities
+                    .Where(x => x.MarketPlaceAppId.Contains(_plan.PlanId))
+                    .Select(x => x.MarketPlaceAppId)
+                    .ToList();
+
+                var companyApps = _MasterContext.CompanyApps
+                    .Where(x => x.CompanyId == user.CompanyId)
+                    .Select(x => x.MarketPlaceAppId)
+                    .ToList();
+
+                var allApps = planApps.Union(companyApps).ToList();
+
+                foreach (var app in allApps)
+                {
+                    claims.AddClaim(new Claim(ClaimTypes.Role, app));
+                }
             }
 
 
@@ -216,9 +233,9 @@ namespace APIBase.Services
             }
         }
 
-   
-      
-   
+
+
+
         //private void ValidateToken(string token)
         //{
         //    var handler = new JwtSecurityTokenHandler();
