@@ -58,6 +58,7 @@ namespace APIBase.Models.POS
         public DateTime? ModifyAt { get; set; }
         public string Description { get; set; }
         public string Sdescription { get; set; }
+        public string Nutrition { get; set; }
 
         public virtual Employee CreateByNavigation { get; set; }
         public virtual ItemCategory ItemCategory { get; set; }

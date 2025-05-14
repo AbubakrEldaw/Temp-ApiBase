@@ -3,6 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using APIBase.Models.POS;
 using Microsoft.AspNetCore.Authorization;
 using APIBase.Helpers;
+using APIBase.Models.CustomModels;
+using System.Xml.Linq;
+using Newtonsoft.Json;
+using APIBase.Models.Enums;
+using APIBase.Models;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace APIBase.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
@@ -27,6 +34,7 @@ public class ItemsController : ControllerBase
     {
         return await _context.Items.Where(x => x.VariantParentId == null && x.StatusId != "st-deleted").Include(x => x.InverseVariantParent.Where(x => x.StatusId != "st-deleted")).Include(x => x.ItemDivision).Include(x => x.ItemCategory).Include(x => x.ItemGroup).Include(x => x.VatGroup).Include(x => x.Status).Include(x => x.ItemModifierItems).Include(x => x.ItemNotInBranches).Include(x => x.ItemBranchPrices).Include(x => x.KitchenPrintGroupItems).AsNoTracking().ToListAsync();
     }
+
 
     [HttpGet("GetDeletedItems")]
     public async Task<ActionResult<IEnumerable<Item>>> GetDeletedItems()
@@ -54,7 +62,7 @@ public class ItemsController : ControllerBase
         return deletedItems;
     }
 
-  
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Item>> GetItem(string id)
     {
@@ -69,10 +77,10 @@ public class ItemsController : ControllerBase
     }
 
 
- 
-  
 
-  
+
+
+
     [HttpGet("Modifiers")]
     public async Task<ActionResult<Item>> GetModifiers()
     {
@@ -777,7 +785,7 @@ public class ItemsController : ControllerBase
 
     }
 
- 
+
     [Authorize(Roles = "Console, prm-items")]
     [HttpPut("Restore/{id}")]
     public async Task<ActionResult<Item>> RestoreItem(string id)
@@ -861,6 +869,152 @@ public class ItemsController : ControllerBase
         catch (Exception)
         {
             return NotFound();
+        }
+    }
+
+    // new stuff
+    [Authorize(Roles = "Console, prm-items")]
+    [HttpPut("UploadItemsForAppSync")]
+    public async Task<ActionResult<int>> UploadItemsForAppSync([FromBody] List<Item> model)
+    {
+        var items = model.Select(item => new
+        {
+            id = item.Id,
+            name = item.Name ?? "",
+            sname = item.Sname ?? "",
+            description = item.Description ?? "",
+            sdescription = item.Sdescription ?? ""
+        });
+
+        var json = JsonConvert.SerializeObject(items);
+
+        var jsonParam = new SqlParameter("@json", SqlDbType.NVarChar)
+        {
+            Value = json
+        };
+
+        int rowsAffected = await _context.Database.ExecuteSqlRawAsync(@"
+                UPDATE i
+                SET i.name = j.name, i.sname = j.sname, i.description = j.description, i.sdescription = j.sdescription
+                FROM [def].[item] i
+                INNER JOIN OPENJSON(@json)
+                WITH (
+                    id NVARCHAR(50),
+                    name NVARCHAR(50),
+                    sname NVARCHAR(50),
+                    description NVARCHAR(MAX),
+                    sdescription NVARCHAR(MAX)
+                ) j ON i.id = j.id
+            ", jsonParam);
+
+        return rowsAffected;
+    }
+
+    [HttpGet("Allergens")]
+    public ActionResult<List<LocalizedName>> GetAllergensAsync()
+    {
+        return Enum.GetValues(typeof(AllergenType))
+         .Cast<AllergenType>()
+         .Select(e =>
+         {
+             var fieldInfo = e.GetType().GetField(e.ToString());
+             var arabicName = fieldInfo?.GetCustomAttributes(typeof(ArabicNameAttribute), false)
+                             .FirstOrDefault() as ArabicNameAttribute;
+
+             return new LocalizedName
+             {
+                 Name = e.ToString(),
+                 Sname = arabicName?.ArabicName ?? string.Empty
+             };
+         })
+         .ToList();
+    }
+
+    [HttpGet("GetItemsForNutritionFacts")]
+    public async Task<ActionResult<IEnumerable<Item>>> GetItemsForNutritionFacts()
+    {
+        var items = await _context.Items
+            .Where(x => x.StatusId != "st-deleted")
+            .Where(x => !_context.Items.Any(y => y.VariantParentId == x.Id))
+            .Include(x => x.VariantParent)
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var item in items)
+        {
+            if (item.VariantParent != null)
+            {
+                item.Name = $"{item.VariantParent.Name} - {item.Name}";
+            }
+        }
+
+        return items
+            .OrderBy(x => x.Name)
+            .ThenBy(x => x.Id)
+            .ToList();
+    }
+
+    [HttpGet("GetItemNutritionFacts/{id}")]
+    public async Task<ActionResult<ItemSummary>> GetItemNutritionFactsAsync(string id)
+    {
+        Item? item = await _context.Items
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (item == null)
+        {
+            return NotFound();
+        }
+
+        ItemSummary itemSummary = new()
+        {
+            Id = item.Id,
+            Name = item.Name,
+            Sname = item.Sname,
+            NutritionFacts = item?.Nutrition != null
+                    ? JsonConvert.DeserializeObject<NutritionFacts>(item.Nutrition) ?? new NutritionFacts()
+                    : new NutritionFacts()
+        };
+
+        return itemSummary;
+    }
+
+    [Authorize(Roles = "Console, prm-items")]
+    [HttpPut("UpdateNutritionFacts")]
+    public async Task<ActionResult<int>> UpdateNutritionFacts([FromBody] List<ItemSummary> model)
+    {
+        try
+        {
+            var items = model
+                .Select(item => new
+                {
+                    item.Id,
+                    Nutrition = JsonConvert.SerializeObject(item.NutritionFacts)
+                });
+
+            var json = JsonConvert.SerializeObject(items);
+
+            var jsonParam = new SqlParameter("@json", SqlDbType.NVarChar)
+            {
+                Value = json
+            };
+
+            int rowsAffected = await _context.Database.ExecuteSqlRawAsync(@"
+                UPDATE i
+                SET i.Nutrition = j.Nutrition
+                FROM [def].[item] i
+                INNER JOIN OPENJSON(@json)
+                WITH (
+                    Id NVARCHAR(100),
+                    Nutrition NVARCHAR(MAX)
+                ) j ON i.Id = j.Id
+            ", jsonParam);
+
+            return rowsAffected;
+        }
+        catch (Exception)
+        {
+            return BadRequest();
         }
     }
 

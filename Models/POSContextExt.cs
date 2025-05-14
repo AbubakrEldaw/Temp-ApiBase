@@ -12,7 +12,6 @@ using Microsoft.Extensions.Options;
 
 namespace APIBase.Models.POS
 {
-
     public partial class POSContext : DbContext
     {
         private readonly HttpContext _httpContext;
