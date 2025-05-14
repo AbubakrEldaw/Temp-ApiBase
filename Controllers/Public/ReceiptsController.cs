@@ -250,7 +250,7 @@ public class ReceiptsController : ControllerBase
         }
     }
 
-    [HttpGet("GetByDatePeriod")]
+    [HttpGet("GetByPeriod")]
     [Tags("Receipts")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [MapToApiVersion("2.0")]
@@ -259,25 +259,19 @@ public class ReceiptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent, StatusCode = 204)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(BasicError))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(BasicError))]
-    public async Task<ActionResult> GetReceiptsByDatePeriod(string? locationId = null, DateTime? fromDate = null, DateTime? toDate = null, int currentPage = 0)
+    public async Task<ActionResult> GetReceiptsByPeriod(string? locationId = null, DateTime? fromDate = null, DateTime? toDate = null, int currentPage = 0)
     {
         try
         {
-            if (string.IsNullOrEmpty(locationId) || !fromDate.HasValue || !toDate.HasValue || currentPage == 0)
-                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The query parameters are not complete" });
-
-            if (fromDate > toDate)
-                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The beginning date cannot be bigger than the end date" });
-
-            TimeSpan diff = toDate.Value - fromDate.Value;
-
-            if (Math.Abs(diff.TotalHours) > 1)
-                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The difference between the dates cannot exceed one hour" });
-
             var AppId = User.Claims.FirstOrDefault(x => x.Type.Equals("MarketPlaceAppId", StringComparison.OrdinalIgnoreCase))?.Value;
+
+            if (AppId == null)
+                return Unauthorized(new JObject() { { "Error", "Unauthorized!" } });
+
             var _mpApp = await _MasterContext.MarketPlaceApps.FirstOrDefaultAsync(x => x.Id == AppId);
 
-            if (_mpApp == null) { return BadRequest(new JObject() { { "Error", "App is not activated for this account!" } }); }
+            if (_mpApp == null) 
+                return BadRequest(new JObject() { { "Error", "App is not activated for this account!" } });
 
             var _companyBranch = await _MasterContext.CompanyBranches.Where(x => x.GlobalBranchId.ToString() == locationId).FirstOrDefaultAsync();
             if (_companyBranch == null)
@@ -290,6 +284,23 @@ public class ReceiptsController : ControllerBase
             {
                 return Unauthorized(new BasicError() { Error = "Error", ErrorDescription = "App is not activated in this account!" });
             }
+
+            // Deserilaize _companyApp.JsonProp to know if the app has the requested branchid in the granted list, unauthorized if not in the list
+
+
+            if (string.IsNullOrEmpty(locationId) || !fromDate.HasValue || !toDate.HasValue || currentPage == 0)
+                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The query parameters are not complete" });
+
+            if (fromDate > toDate)
+                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The beginning date cannot be bigger than the end date" });
+
+            TimeSpan diff = toDate.Value - fromDate.Value;
+
+
+            //not more 
+            if (Math.Abs(diff.TotalDays) > 31)
+                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The difference between the dates cannot exceed one month" });
+
 
             POSContext _posContext = new POSContext(_companyApp.CompanyId, _MasterContext, _encMaster.AppSettings);
 
