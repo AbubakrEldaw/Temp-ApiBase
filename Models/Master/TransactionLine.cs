@@ -20,12 +20,17 @@ namespace APIBase.Models.Master
         public string Description { get; set; }
         public string Sdescription { get; set; }
         public decimal Price { get; set; }
+        public decimal BasePrice { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal SubTotal { get; set; }
         public decimal VatAmount { get; set; }
         public decimal Total { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public bool AutoRenew { get; set; }
 
         public virtual Transaction Transaction { get; set; }
         public virtual ICollection<CompanyLicense> CompanyLicenses { get; set; }
     }
+
 }

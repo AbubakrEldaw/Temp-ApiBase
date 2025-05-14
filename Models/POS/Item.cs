@@ -19,6 +19,7 @@ namespace APIBase.Models.POS
             ItemNotInBranches = new HashSet<ItemNotInBranch>();
             KitchenPrintGroupItems = new HashSet<KitchenPrintGroupItem>();
             ModifierGroupItems = new HashSet<ModifierGroupItem>();
+            ItemDiscounts = new HashSet<ItemDiscount>();
             OrderItemItems = new HashSet<OrderItem>();
             OrderItemVariants = new HashSet<OrderItem>();
         }

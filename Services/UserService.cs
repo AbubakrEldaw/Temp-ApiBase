@@ -9,13 +9,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using APIBase.Models.Enums;
 
 namespace APIBase.Services
 {
     public interface IUserService
     {
         AuthenticateResponse Authenticate(AuthenticateRequest model, string ipAddress);
-         Task<AuthenticateResponse> RefreshToken(string token, string ipAddress);
+        Task<AuthenticateResponse> RefreshToken(string token, string ipAddress);
         bool RevokeToken(string token, string ipAddress);
         IEnumerable<User> GetAll();
         User GetById(int id);
@@ -176,6 +177,38 @@ namespace APIBase.Services
                 {
                     claims.AddClaim(new Claim(ClaimTypes.Role, feature.FeatureId));
                 }
+
+                var planApps = _MasterContext.MarketPlaceAppPlanAvailabilities
+                    .Where(x => x.MarketPlaceAppId.Contains(_plan.PlanId))
+                    .Select(x => x.MarketPlaceAppId)
+                    .ToList();
+
+                var paidCompanyApps = _MasterContext.TransactionLines
+                        .Where
+                        (
+                            trnLine =>
+                                trnLine.Transaction.CompanyId == user.CompanyId &&
+                                trnLine.Transaction.Status == TransactionStatus.Paid.ToString() &&
+                                trnLine.Type == TransactionLineTypes.App.ToString() 
+                                && trnLine.EndDate == _plan.EndDate
+                        )
+                        .Select(trnLine => trnLine.ReferenceId)
+                        .ToList();
+
+                var companyApps = _MasterContext.CompanyApps
+                    .Where(x => x.CompanyId == user.CompanyId && paidCompanyApps.Contains(x.MarketPlaceAppId))
+                    .Select(x => x.MarketPlaceAppId)
+                    .ToList();
+
+                var allApps = planApps.Union(companyApps).ToList();
+
+                foreach (var app in allApps)
+                {
+                    claims.AddClaim(new Claim(ClaimTypes.Role, app));
+                }
+
+                //claims.AddClaim(new Claim(ClaimTypes.Role, "Foodizone"));
+                //claims.AddClaim(new Claim(ClaimTypes.Role, "prm-rpt-api-orders"));
             }
 
 
@@ -216,9 +249,9 @@ namespace APIBase.Services
             }
         }
 
-   
-      
-   
+
+
+
         //private void ValidateToken(string token)
         //{
         //    var handler = new JwtSecurityTokenHandler();

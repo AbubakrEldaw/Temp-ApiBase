@@ -156,6 +156,34 @@ namespace APIBase.Models.POS
                     .HasColumnName("unmaped_modifier_id");
             });
 
+            modelBuilder.Entity<ItemDiscount>(entity =>
+            {
+                entity.HasKey(e => new { e.DiscountId, e.ItemId })
+                    .HasName("PK_discount_item");
+
+                entity.ToTable("item_discount", "def");
+
+                entity.Property(e => e.DiscountId)
+                    .HasMaxLength(20)
+                    .HasColumnName("discount_id");
+
+                entity.Property(e => e.ItemId)
+                    .HasMaxLength(20)
+                    .HasColumnName("item_id");
+
+                entity.HasOne(d => d.Discount)
+                    .WithMany(p => p.ItemDiscounts)
+                    .HasForeignKey(d => d.DiscountId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_discount_discount");
+
+                entity.HasOne(d => d.Item)
+                    .WithMany(p => p.ItemDiscounts)
+                    .HasForeignKey(d => d.ItemId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_item_discount_item");
+            });
+
             modelBuilder.Entity<AggrItemMapping>(entity =>
             {
                 entity.HasKey(e => new { e.AggrId, e.ItemType, e.ItemAggrId, e.AggrVariantId })
@@ -2963,6 +2991,7 @@ namespace APIBase.Models.POS
                     .HasMaxLength(20)
                     .HasColumnName("void_type_id");
 
+
                 entity.Property(e => e.WaiterId)
                     .HasMaxLength(20)
                     .HasColumnName("waiter_id");
@@ -3206,6 +3235,11 @@ namespace APIBase.Models.POS
                 entity.Property(e => e.VoidTypeId)
                     .HasMaxLength(20)
                     .HasColumnName("void_type_id");
+
+                entity.HasOne(d => d.Discount)
+                    .WithMany(p => p.OrderItems)
+                    .HasForeignKey(d => d.DiscountId)
+                    .HasConstraintName("FK_order_item_discount");
 
                 entity.HasOne(d => d.CreateByNavigation)
                     .WithMany(p => p.OrderItemCreateByNavigations)
@@ -3569,6 +3603,42 @@ namespace APIBase.Models.POS
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
             });
+
+            modelBuilder.Entity<ReceiptSetting>(entity =>
+            {
+                entity.HasKey(e => e.BranchId)
+                    .HasName("PK_receipt_settings");
+
+                entity.ToTable("receipt_setting", "def");
+
+                entity.Property(e => e.BranchId)
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.Footer)
+                    .IsRequired()
+                    .HasColumnName("footer")
+                    .HasDefaultValueSql("('')");
+
+                entity.Property(e => e.Header)
+                    .IsRequired()
+                    .HasColumnName("header")
+                    .HasDefaultValueSql("('')");
+
+                entity.Property(e => e.ImageName).HasColumnName("image_name");
+
+                entity.Property(e => e.ImagePath).HasColumnName("image_path");
+
+                entity.Property(e => e.ShowCustomerComment).HasColumnName("show_customer_comment");
+
+                entity.Property(e => e.ShowCustomerInfo).HasColumnName("show_customer_info");
+
+                entity.HasOne(d => d.Branch)
+                    .WithOne(p => p.ReceiptSetting)
+                    .HasForeignKey<ReceiptSetting>(d => d.BranchId)
+                    .HasConstraintName("FK_receipt_setting_branch");
+            });
+
 
             modelBuilder.Entity<PermRolePerm>(entity =>
             {

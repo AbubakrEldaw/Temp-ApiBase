@@ -50,6 +50,7 @@ namespace APIBase.Models.POS
         public string PostalZone { get; set; }
         public string CountrySubentity { get; set; }
         public string Country { get; set; }
+        public virtual ReceiptSetting ReceiptSetting { get; set; }
 
         public virtual Employee CreateByNavigation { get; set; }
         public virtual Employee ModifyByNavigation { get; set; }
