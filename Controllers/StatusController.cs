@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using APIBase.Models.POS;
 using Microsoft.AspNetCore.Authorization;
 
-namespace API.Controllers;
+namespace APIBase.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 [Authorize]
 [Route("api/[controller]")]
