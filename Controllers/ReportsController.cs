@@ -1336,8 +1336,13 @@ public class ReportsController : Controller
     {
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
+        var stopwatch = Stopwatch.StartNew();
+
+        var stagingStatus = await _context.ApiOrderStagingStatuses
+            .AsNoTracking()
+            .ToListAsync();
+
         var result = await _context.ApiOrders
-            .Include(o => o.StagingStatus)
             .Where
             (
                 x =>
@@ -1345,9 +1350,44 @@ public class ReportsController : Controller
                     x.AppOrderReceiveDatetime <= to.Date &&
                     (branches == "all" ? true : branches.Contains(x.BranchId))
             )
+            .AsNoTracking()
             .ToListAsync();
 
-        return Ok(result);
+        List<ApiOrder> joined = result
+            .GroupJoin(
+                stagingStatus,
+                order => order.StagingStatusId,
+                status => status.Id,
+                (order, matchingStatus) => new ApiOrder()
+                {
+                    Id = order.Id,
+                    BranchId = order.BranchId,
+                    GlobalLocationId = order.GlobalLocationId,
+                    OrderType = order.OrderType,
+                    OrderIsPaid = order.OrderIsPaid,
+                    SubTotal = order.SubTotal,
+                    DiscountAmount = order.DiscountAmount,
+                    GrandTotal = order.GrandTotal,
+                    PaymentType = order.PaymentType,
+                    OrderSource = order.OrderSource,
+                    OrderModel = order.OrderModel,
+                    StagingStatusId = order.StagingStatusId,
+                    AppId = order.AppId,
+                    AppOrderId = order.AppOrderId,
+                    AppOrderNumber = order.AppOrderNumber,
+                    AppOrderReceiveDatetime = order.AppOrderReceiveDatetime,
+                    AppOrderPickupDatetime = order.AppOrderPickupDatetime,
+                    PosOrderId = order.PosOrderId,
+                    PosOrderNumber = order.PosOrderNumber,
+                    StagingStatus = matchingStatus.FirstOrDefault()
+                })
+            .ToList();
+
+        stopwatch.Stop();
+
+        Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
+
+        return Ok(joined);
     }
 
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
