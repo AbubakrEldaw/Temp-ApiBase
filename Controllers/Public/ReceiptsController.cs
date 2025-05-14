@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using APIBase.PublicAPIModels;
 using System.Net.Mime;
 using Microsoft.AspNetCore.Authorization;
-using APIBase.PublicAPIModels.RiyadhAirportsModels;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 using Humanizer;
@@ -284,7 +283,6 @@ public class ReceiptsController : ControllerBase
             if (_companyBranch == null)
             {
                 return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "Location id is not valid!" });
-
             }
 
             var _companyApp = await _MasterContext.CompanyApps.Where(x => x.CompanyId == _companyBranch.CompanyId && x.MarketPlaceAppId == AppId).FirstOrDefaultAsync();
