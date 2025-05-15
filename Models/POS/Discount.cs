@@ -13,7 +13,6 @@ namespace APIBase.Models.POS
             ItemDiscounts = new HashSet<ItemDiscount>();
             OrderHeaders = new HashSet<OrderHeader>();
             OrderItems = new HashSet<OrderItem>();
-            ItemDiscounts = new HashSet<ItemDiscount>();
         }
 
         public byte[] RowVersion { get; set; }
@@ -41,6 +40,5 @@ namespace APIBase.Models.POS
         public virtual ICollection<ItemDiscount> ItemDiscounts { get; set; }
         public virtual ICollection<OrderHeader> OrderHeaders { get; set; }
         public virtual ICollection<OrderItem> OrderItems { get; set; }
-        public virtual ICollection<ItemDiscount> ItemDiscounts { get; set; }
     }
 }
