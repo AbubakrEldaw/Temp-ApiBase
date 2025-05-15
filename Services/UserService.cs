@@ -190,7 +190,7 @@ namespace APIBase.Services
                                 trnLine.Transaction.CompanyId == user.CompanyId &&
                                 trnLine.Transaction.Status == TransactionStatus.Paid.ToString() &&
                                 trnLine.Type == TransactionLineTypes.App.ToString() 
-                                //&& trnLine.EndDate == _plan.EndDate
+                                && trnLine.EndDate == _plan.EndDate
                         )
                         .Select(trnLine => trnLine.ReferenceId)
                         .ToList();
@@ -207,8 +207,8 @@ namespace APIBase.Services
                     claims.AddClaim(new Claim(ClaimTypes.Role, app));
                 }
 
-                claims.AddClaim(new Claim(ClaimTypes.Role, "Foodizone"));
-                claims.AddClaim(new Claim(ClaimTypes.Role, "prm-rpt-api-orders"));
+                //claims.AddClaim(new Claim(ClaimTypes.Role, "Foodizone"));
+                //claims.AddClaim(new Claim(ClaimTypes.Role, "prm-rpt-api-orders"));
             }
 
 

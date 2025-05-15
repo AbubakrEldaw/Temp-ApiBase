@@ -316,7 +316,7 @@ public class ReceiptsController : ControllerBase
 
             stopwatch.Stop();
 
-            Console.WriteLine($"Elapsed time: {stopwatch.Elapsed} ms");
+            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
 
             if (result == null || !result.Items.Any())
             {
