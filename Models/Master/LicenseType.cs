@@ -9,6 +9,7 @@ namespace APIBase.Models.Master
     {
         public LicenseType()
         {
+            CompanyBranchSubescriptionLicenses = new HashSet<CompanyBranchSubescriptionLicense>();
             CompanyLicenses = new HashSet<CompanyLicense>();
         }
 
@@ -18,6 +19,7 @@ namespace APIBase.Models.Master
         public decimal MonthlyPrice { get; set; }
         public decimal YearlyPrice { get; set; }
 
+        public virtual ICollection<CompanyBranchSubescriptionLicense> CompanyBranchSubescriptionLicenses { get; set; }
         public virtual ICollection<CompanyLicense> CompanyLicenses { get; set; }
     }
 }

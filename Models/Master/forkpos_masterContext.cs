@@ -22,9 +22,13 @@ namespace APIBase.Models.Master
         public virtual DbSet<CompanyApp> CompanyApps { get; set; }
         public virtual DbSet<CompanyAppSetting> CompanyAppSettings { get; set; }
         public virtual DbSet<CompanyBranch> CompanyBranches { get; set; }
+        public virtual DbSet<CompanyBranchIntegration> CompanyBranchIntegrations { get; set; }
+        public virtual DbSet<CompanyBranchSubescription> CompanyBranchSubescriptions { get; set; }
+        public virtual DbSet<CompanyBranchSubescriptionLicense> CompanyBranchSubescriptionLicenses { get; set; }
         public virtual DbSet<CompanyFeature> CompanyFeatures { get; set; }
         public virtual DbSet<CompanyLicense> CompanyLicenses { get; set; }
         public virtual DbSet<CompanyPlan> CompanyPlans { get; set; }
+        public virtual DbSet<CompanySavedCard> CompanySavedCards { get; set; }
         public virtual DbSet<ConnStr> ConnStrs { get; set; }
         public virtual DbSet<DisplayFeature> DisplayFeatures { get; set; }
         public virtual DbSet<DisplayFeaturePlan> DisplayFeaturePlans { get; set; }
@@ -36,15 +40,19 @@ namespace APIBase.Models.Master
         public virtual DbSet<MarketPlaceCategory> MarketPlaceCategories { get; set; }
         public virtual DbSet<MarketPlaceCompanyBlacklist> MarketPlaceCompanyBlacklists { get; set; }
         public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
+        public virtual DbSet<PaymentSession> PaymentSessions { get; set; }
         public virtual DbSet<Plan> Plans { get; set; }
         public virtual DbSet<PlanFeature> PlanFeatures { get; set; }
         public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
         public virtual DbSet<SubscriptionCategory> SubscriptionCategories { get; set; }
+        public virtual DbSet<SystemLog> SystemLogs { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
         public virtual DbSet<TransactionLine> TransactionLines { get; set; }
         public virtual DbSet<TransactionPayment> TransactionPayments { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<UserLink> UserLinks { get; set; }
 
+   
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasAnnotation("Relational:Collation", "SQL_Latin1_General_CP1_CI_AS");
@@ -232,6 +240,94 @@ namespace APIBase.Models.Master
                     .HasConstraintName("FK_company_branch_company");
             });
 
+            modelBuilder.Entity<CompanyBranchIntegration>(entity =>
+            {
+                entity.HasKey(e => e.GlobalBranchId);
+
+                entity.ToTable("company_branch_integration");
+
+                entity.Property(e => e.GlobalBranchId)
+                    .ValueGeneratedNever()
+                    .HasColumnName("global_branch_id");
+
+                entity.Property(e => e.FoodizoneBranchId).HasColumnName("foodizone_branch_id");
+
+                entity.HasOne(d => d.GlobalBranch)
+                    .WithOne(p => p.CompanyBranchIntegration)
+                    .HasPrincipalKey<CompanyBranch>(p => p.GlobalBranchId)
+                    .HasForeignKey<CompanyBranchIntegration>(d => d.GlobalBranchId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_company_branch_integration_company_branch");
+            });
+
+            modelBuilder.Entity<CompanyBranchSubescription>(entity =>
+            {
+                entity.HasKey(e => new { e.CompanyId, e.BranchId });
+
+                entity.ToTable("company_branch_subescription", "lic");
+
+                entity.Property(e => e.CompanyId)
+                    .HasMaxLength(20)
+                    .HasColumnName("company_id");
+
+                entity.Property(e => e.BranchId)
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.EndDate)
+                    .HasColumnType("date")
+                    .HasColumnName("end_date");
+
+                entity.Property(e => e.GracePeriodInDays).HasColumnName("grace_period_in_days");
+
+                entity.Property(e => e.StartDate)
+                    .HasColumnType("date")
+                    .HasColumnName("start_date");
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.CompanyBranchSubescriptions)
+                    .HasForeignKey(d => d.CompanyId)
+                    .HasConstraintName("FK_company_branch_subescription_company");
+
+                entity.HasOne(d => d.CompanyBranch)
+                    .WithOne(p => p.CompanyBranchSubescription)
+                    .HasForeignKey<CompanyBranchSubescription>(d => new { d.CompanyId, d.BranchId })
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_company_branch_subescription_company_branch");
+            });
+
+            modelBuilder.Entity<CompanyBranchSubescriptionLicense>(entity =>
+            {
+                entity.HasKey(e => new { e.CompanyId, e.BranchId, e.LicenseTypeId });
+
+                entity.ToTable("company_branch_subescription_license", "lic");
+
+                entity.Property(e => e.CompanyId)
+                    .HasMaxLength(20)
+                    .HasColumnName("company_id");
+
+                entity.Property(e => e.BranchId)
+                    .HasMaxLength(20)
+                    .HasColumnName("branch_id");
+
+                entity.Property(e => e.LicenseTypeId)
+                    .HasMaxLength(20)
+                    .HasColumnName("license_type_id");
+
+                entity.Property(e => e.Quantity).HasColumnName("quantity");
+
+                entity.HasOne(d => d.LicenseType)
+                    .WithMany(p => p.CompanyBranchSubescriptionLicenses)
+                    .HasForeignKey(d => d.LicenseTypeId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_company_branch_subescription_license_license_type");
+
+                entity.HasOne(d => d.CompanyBranchSubescription)
+                    .WithMany(p => p.CompanyBranchSubescriptionLicenses)
+                    .HasForeignKey(d => new { d.CompanyId, d.BranchId })
+                    .HasConstraintName("FK_company_branch_subescription_license_company_branch_subescription");
+            });
+
             modelBuilder.Entity<CompanyFeature>(entity =>
             {
                 entity.HasKey(e => new { e.CompanyId, e.FeatureId });
@@ -402,6 +498,8 @@ namespace APIBase.Models.Master
                     .HasMaxLength(20)
                     .HasColumnName("plan_id");
 
+                entity.Property(e => e.RenewalAttempts).HasColumnName("renewal_attempts");
+
                 entity.Property(e => e.StartDate)
                     .HasColumnType("date")
                     .HasColumnName("start_date");
@@ -419,6 +517,58 @@ namespace APIBase.Models.Master
                     .WithMany(p => p.CompanyPlans)
                     .HasForeignKey(d => d.PlanId)
                     .HasConstraintName("FK_company_plan_plan");
+            });
+
+            modelBuilder.Entity<CompanySavedCard>(entity =>
+            {
+                entity.ToTable("company_saved_card", "trn");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasDefaultValueSql("(newid())");
+
+                entity.Property(e => e.Alias).HasColumnName("alias");
+
+                entity.Property(e => e.Brand)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasColumnName("brand");
+
+                entity.Property(e => e.CardNumberMasked)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasColumnName("card_number_masked");
+
+                entity.Property(e => e.CompanyId)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("company_id");
+
+                entity.Property(e => e.DisplayToken).HasColumnName("display_token");
+
+                entity.Property(e => e.ExpiryMonth)
+                    .IsRequired()
+                    .HasMaxLength(2)
+                    .IsUnicode(false)
+                    .HasColumnName("expiry_month");
+
+                entity.Property(e => e.ExpiryYear)
+                    .IsRequired()
+                    .HasMaxLength(4)
+                    .IsUnicode(false)
+                    .HasColumnName("expiry_year");
+
+                entity.Property(e => e.IsDefault).HasColumnName("is_default");
+
+                entity.Property(e => e.SubscriptionToken).HasColumnName("subscription_token");
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.CompanySavedCards)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_company_saved_card_company");
             });
 
             modelBuilder.Entity<ConnStr>(entity =>
@@ -786,6 +936,64 @@ namespace APIBase.Models.Master
                     .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname");
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(15)
+                    .IsUnicode(false)
+                    .HasColumnName("status");
+            });
+
+            modelBuilder.Entity<PaymentSession>(entity =>
+            {
+                entity.ToTable("payment_session", "trn");
+
+                entity.Property(e => e.Id)
+                    .ValueGeneratedNever()
+                    .HasColumnName("id");
+
+                entity.Property(e => e.CompanyId)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("company_id");
+
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+
+                entity.Property(e => e.PaymentJson)
+                    .IsRequired()
+                    .HasColumnName("payment_json");
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(15)
+                    .HasColumnName("status");
+
+                entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+
+                entity.Property(e => e.TransactionLinesJson)
+                    .IsRequired()
+                    .HasColumnName("transaction_lines_json");
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.PaymentSessions)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_payment_session_company");
+
+                entity.HasOne(d => d.Transaction)
+                    .WithMany(p => p.PaymentSessions)
+                    .HasForeignKey(d => d.TransactionId)
+                    .HasConstraintName("FK_payment_session_transaction");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.PaymentSessions)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_payment_session_Users");
             });
 
             modelBuilder.Entity<Plan>(entity =>
@@ -879,6 +1087,56 @@ namespace APIBase.Models.Master
                     .HasColumnName("sname");
             });
 
+            modelBuilder.Entity<SystemLog>(entity =>
+            {
+                entity.ToTable("system_log");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasDefaultValueSql("(newid())");
+
+                entity.Property(e => e.Action)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("action");
+
+                entity.Property(e => e.CompanyId)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("company_id");
+
+                entity.Property(e => e.ErrorMessage)
+                    .IsRequired()
+                    .HasColumnName("error_message");
+
+                entity.Property(e => e.Notes).HasColumnName("notes");
+
+                entity.Property(e => e.RequestJson).HasColumnName("request_json");
+
+                entity.Property(e => e.ResponseJson).HasColumnName("response_json");
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("status");
+
+                entity.Property(e => e.Time)
+                    .HasColumnType("datetime")
+                    .HasColumnName("time")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnName("type");
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.SystemLogs)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_system_log_company");
+            });
+
             modelBuilder.Entity<Transaction>(entity =>
             {
                 entity.ToTable("transaction", "trn");
@@ -924,6 +1182,12 @@ namespace APIBase.Models.Master
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("total");
 
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasMaxLength(15)
+                    .HasColumnName("type")
+                    .HasDefaultValueSql("('Purchase')");
+
                 entity.Property(e => e.VatAmount)
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("vat_amount");
@@ -959,6 +1223,12 @@ namespace APIBase.Models.Master
                     .HasColumnName("id")
                     .HasDefaultValueSql("(newid())");
 
+                entity.Property(e => e.AutoRenew).HasColumnName("auto_renew");
+
+                entity.Property(e => e.BasePrice)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("base_price");
+
                 entity.Property(e => e.Description)
                     .IsRequired()
                     .HasMaxLength(100)
@@ -968,6 +1238,10 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.DiscountAmount)
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("discount_amount");
+
+                entity.Property(e => e.EndDate)
+                    .HasColumnType("date")
+                    .HasColumnName("end_date");
 
                 entity.Property(e => e.OrderIndex).HasColumnName("order_index");
 
@@ -985,6 +1259,10 @@ namespace APIBase.Models.Master
                     .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnName("sdescription");
+
+                entity.Property(e => e.StartDate)
+                    .HasColumnType("date")
+                    .HasColumnName("start_date");
 
                 entity.Property(e => e.SubTotal)
                     .HasColumnType("decimal(18, 2)")
@@ -1088,6 +1366,31 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Username).IsRequired();
 
                 entity.Property(e => e.VerifiedAt).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<UserLink>(entity =>
+            {
+                entity.ToTable("user_link");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasDefaultValueSql("(newid())");
+
+                entity.Property(e => e.LinkedUserId).HasColumnName("linked_user_id");
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.HasOne(d => d.LinkedUser)
+                    .WithMany(p => p.UserLinkLinkedUsers)
+                    .HasForeignKey(d => d.LinkedUserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_user_link_Users1");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.UserLinkUsers)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_user_link_Users");
             });
 
             OnModelCreatingPartial(modelBuilder);

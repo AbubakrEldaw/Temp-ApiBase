@@ -12,5 +12,7 @@ namespace APIBase.Models.Master
         public Guid GlobalBranchId { get; set; }
 
         public virtual Company Company { get; set; }
+        public virtual CompanyBranchIntegration CompanyBranchIntegration { get; set; }
+        public virtual CompanyBranchSubescription CompanyBranchSubescription { get; set; }
     }
 }

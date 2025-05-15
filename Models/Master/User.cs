@@ -9,10 +9,13 @@ namespace APIBase.Models.Master
     {
         public User()
         {
+            PaymentSessions = new HashSet<PaymentSession>();
             RefreshTokens = new HashSet<RefreshToken>();
             TransactionCreatedByNavigations = new HashSet<Transaction>();
             TransactionModifiedByNavigations = new HashSet<Transaction>();
             TransactionPaidByNavigations = new HashSet<Transaction>();
+            UserLinkLinkedUsers = new HashSet<UserLink>();
+            UserLinkUsers = new HashSet<UserLink>();
         }
 
         public int Id { get; set; }
@@ -31,9 +34,12 @@ namespace APIBase.Models.Master
         public int OtpResendCount { get; set; }
         public bool? IsAdmin { get; set; }
 
+        public virtual ICollection<PaymentSession> PaymentSessions { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; }
         public virtual ICollection<Transaction> TransactionCreatedByNavigations { get; set; }
         public virtual ICollection<Transaction> TransactionModifiedByNavigations { get; set; }
         public virtual ICollection<Transaction> TransactionPaidByNavigations { get; set; }
+        public virtual ICollection<UserLink> UserLinkLinkedUsers { get; set; }
+        public virtual ICollection<UserLink> UserLinkUsers { get; set; }
     }
 }

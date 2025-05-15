@@ -12,9 +12,10 @@ namespace APIBase.Models.Master
         public bool InTrial { get; set; }
         public DateTime? TrialEndDate { get; set; }
         public bool? IsActive { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
         public int GracePeriod { get; set; }
+        public byte RenewalAttempts { get; set; }
 
         public virtual Company Company { get; set; }
         public virtual Plan Plan { get; set; }

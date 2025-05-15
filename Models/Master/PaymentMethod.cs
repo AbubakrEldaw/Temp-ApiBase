@@ -18,6 +18,7 @@ namespace APIBase.Models.Master
         public string Description { get; set; }
         public string Sdescription { get; set; }
         public decimal Fees { get; set; }
+        public string Status { get; set; }
 
         public virtual ICollection<TransactionPayment> TransactionPayments { get; set; }
     }

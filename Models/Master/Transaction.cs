@@ -9,6 +9,7 @@ namespace APIBase.Models.Master
     {
         public Transaction()
         {
+            PaymentSessions = new HashSet<PaymentSession>();
             TransactionLines = new HashSet<TransactionLine>();
             TransactionPayments = new HashSet<TransactionPayment>();
         }
@@ -25,11 +26,13 @@ namespace APIBase.Models.Master
         public DateTime? ModifiedAt { get; set; }
         public DateTime? PaidAt { get; set; }
         public string Status { get; set; }
+        public string Type { get; set; }
 
         public virtual Company Company { get; set; }
         public virtual User CreatedByNavigation { get; set; }
         public virtual User ModifiedByNavigation { get; set; }
         public virtual User PaidByNavigation { get; set; }
+        public virtual ICollection<PaymentSession> PaymentSessions { get; set; }
         public virtual ICollection<TransactionLine> TransactionLines { get; set; }
         public virtual ICollection<TransactionPayment> TransactionPayments { get; set; }
     }

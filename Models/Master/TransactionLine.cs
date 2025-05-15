@@ -32,5 +32,4 @@ namespace APIBase.Models.Master
         public virtual Transaction Transaction { get; set; }
         public virtual ICollection<CompanyLicense> CompanyLicenses { get; set; }
     }
-
 }
