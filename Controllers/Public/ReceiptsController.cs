@@ -22,6 +22,8 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using System.Drawing.Printing;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace APIBase.Controllers.v2;
 [Authorize]
@@ -263,6 +265,8 @@ public class ReceiptsController : ControllerBase
     {
         try
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var AppId = User.Claims.FirstOrDefault(x => x.Type.Equals("MarketPlaceAppId", StringComparison.OrdinalIgnoreCase))?.Value;
 
             if (AppId == null)
@@ -270,7 +274,7 @@ public class ReceiptsController : ControllerBase
 
             var _mpApp = await _MasterContext.MarketPlaceApps.FirstOrDefaultAsync(x => x.Id == AppId);
 
-            if (_mpApp == null) 
+            if (_mpApp == null)
                 return BadRequest(new JObject() { { "Error", "App is not activated for this account!" } });
 
             var _companyBranch = await _MasterContext.CompanyBranches.Where(x => x.GlobalBranchId.ToString() == locationId).FirstOrDefaultAsync();
@@ -285,26 +289,34 @@ public class ReceiptsController : ControllerBase
                 return Unauthorized(new BasicError() { Error = "Error", ErrorDescription = "App is not activated in this account!" });
             }
 
-            // Deserilaize _companyApp.JsonProp to know if the app has the requested branchid in the granted list, unauthorized if not in the list
-
-
             if (string.IsNullOrEmpty(locationId) || !fromDate.HasValue || !toDate.HasValue || currentPage == 0)
                 return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The query parameters are not complete" });
+
+            // todo: Deserialize into the correct model after the marketplace app is done;
+            //var allowedBranches = JsonConvert.DeserializeObject<List<string>>(_companyApp.JsonProp);
+
+            //if (allowedBranches == null || !allowedBranches.Contains(locationId))
+            //{
+            //    return Unauthorized(new BasicError() { Error = "Error", ErrorDescription = "App is not activated in this account!" });
+            //}
 
             if (fromDate > toDate)
                 return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The beginning date cannot be bigger than the end date" });
 
             TimeSpan diff = toDate.Value - fromDate.Value;
 
-
             //not more 
-            if (Math.Abs(diff.TotalDays) > 31)
-                return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The difference between the dates cannot exceed one month" });
-
+            //if (Math.Abs(diff.TotalDays) > 31)
+            //    return BadRequest(new BasicError() { Error = "Error", ErrorDescription = "The difference between the dates cannot exceed one month" });
 
             POSContext _posContext = new POSContext(_companyApp.CompanyId, _MasterContext, _encMaster.AppSettings);
 
             PagedResult<Receipt>? result = await GetReceipts(_posContext, _companyBranch, fromDate.Value, toDate.Value, currentPage);
+
+
+            stopwatch.Stop();
+
+            Console.WriteLine($"Elapsed time: {stopwatch.Elapsed} ms");
 
             if (result == null || !result.Items.Any())
             {
