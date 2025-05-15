@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using NuGet.Packaging;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using Company = APIBase.Models.Master.Company;
 
@@ -1331,9 +1332,19 @@ public class ReportsController : Controller
         return Ok(result);
     }
 
-    [HttpGet("ApiOrders")]
-    public async Task<IActionResult> ApiOrders(DateTime from, DateTime to, string branches = "all")
+    [HttpPost("ApiOrders")]
+    public async Task<IActionResult> ApiOrders([FromBody] DatatableAPIRequest request)
     {
+        if (request.Branches == null)
+        {
+            request.Branches = new HashSet<string>();
+        }
+
+        if (request.From == null || request.To == null)
+        {
+            throw new Exception();
+        }
+
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
 
         var stopwatch = Stopwatch.StartNew();
@@ -1342,52 +1353,115 @@ public class ReportsController : Controller
             .AsNoTracking()
             .ToListAsync();
 
-        var result = await _context.ApiOrders
+        int apiOrdersCount = await _context.ApiOrders
             .Where
             (
-                x =>
-                    x.AppOrderReceiveDatetime >= from.Date &&
-                    x.AppOrderReceiveDatetime <= to.Date &&
-                    (branches == "all" ? true : branches.Contains(x.BranchId))
+                ao =>
+                    (string.IsNullOrEmpty(request.Search.Value) ? true : ao.AppOrderNumber.Contains(request.Search.Value)) &&
+                    ao.AppOrderReceiveDatetime >= request.From.Value.Date &&
+                    ao.AppOrderReceiveDatetime <= request.To.Value.Date &&
+                    (request.Branches.Any() ? request.Branches.Contains(ao.BranchId) : true)
             )
             .AsNoTracking()
-            .ToListAsync();
+            .CountAsync();
 
-        List<ApiOrder> joined = result
-            .GroupJoin(
-                stagingStatus,
-                order => order.StagingStatusId,
-                status => status.Id,
-                (order, matchingStatus) => new ApiOrder()
+        List<ApiOrder> joinedApiOrders = [];
+
+        if (apiOrdersCount > 0)
+        {
+            IQueryable<ApiOrder> apiOrdersQuery = _context.ApiOrders
+                .Where
+                (
+                    ao =>
+                        (string.IsNullOrEmpty(request.Search.Value) ? true : ao.AppOrderNumber.Contains(request.Search.Value)) &&
+                        ao.AppOrderReceiveDatetime >= request.From.Value.Date &&
+                        ao.AppOrderReceiveDatetime <= request.To.Value.Date &&
+                        (request.Branches.Any() ? request.Branches.Contains(ao.BranchId) : true)
+                )
+                .AsNoTracking();
+
+            if (request.Order.Count > 0)
+            {
+                for (int i = 0; i < request.Order.Count; i++)
                 {
-                    Id = order.Id,
-                    BranchId = order.BranchId,
-                    GlobalLocationId = order.GlobalLocationId,
-                    OrderType = order.OrderType,
-                    OrderIsPaid = order.OrderIsPaid,
-                    SubTotal = order.SubTotal,
-                    DiscountAmount = order.DiscountAmount,
-                    GrandTotal = order.GrandTotal,
-                    PaymentType = order.PaymentType,
-                    OrderSource = order.OrderSource,
-                    OrderModel = order.OrderModel,
-                    StagingStatusId = order.StagingStatusId,
-                    AppId = order.AppId,
-                    AppOrderId = order.AppOrderId,
-                    AppOrderNumber = order.AppOrderNumber,
-                    AppOrderReceiveDatetime = order.AppOrderReceiveDatetime,
-                    AppOrderPickupDatetime = order.AppOrderPickupDatetime,
-                    PosOrderId = order.PosOrderId,
-                    PosOrderNumber = order.PosOrderNumber,
-                    StagingStatus = matchingStatus.FirstOrDefault()
-                })
-            .ToList();
+                    var columnName = request.Columns[request.Order[i].Column].Data;
+                    var parameter = Expression.Parameter(typeof(ApiOrder), "c");
+                    var property = Expression.Property(parameter, columnName);
+                    var convertedProperty = Expression.Convert(property, typeof(object));
+                    var lambda = Expression.Lambda<Func<ApiOrder, object>>(convertedProperty, parameter);
+
+                    if (i == 0)
+                    {
+                        if (request.Order[i].Dir == "asc")
+                        {
+                            apiOrdersQuery = Queryable.OrderBy(apiOrdersQuery, lambda);
+                        }
+                        else
+                        {
+                            apiOrdersQuery = Queryable.OrderByDescending(apiOrdersQuery, lambda);
+                        }
+                    }
+                    else
+                    {
+                        if (request.Order[i].Dir == "asc")
+                        {
+                            apiOrdersQuery = Queryable.ThenBy((IOrderedQueryable<ApiOrder>)apiOrdersQuery, lambda);
+                        }
+                        else
+                        {
+                            apiOrdersQuery = Queryable.ThenByDescending((IOrderedQueryable<ApiOrder>)apiOrdersQuery, lambda);
+                        }
+                    }
+                }
+            }
+
+            var apiOrders = await apiOrdersQuery
+                .Skip(request.Start)
+                .Take(request.Length)
+                .ToListAsync();
+
+            joinedApiOrders = apiOrders
+                .GroupJoin(
+                    stagingStatus,
+                    order => order.StagingStatusId,
+                    status => status.Id,
+                    (order, matchingStatus) => new ApiOrder()
+                    {
+                        Id = order.Id,
+                        BranchId = order.BranchId,
+                        GlobalLocationId = order.GlobalLocationId,
+                        OrderType = order.OrderType,
+                        OrderIsPaid = order.OrderIsPaid,
+                        SubTotal = order.SubTotal,
+                        DiscountAmount = order.DiscountAmount,
+                        GrandTotal = order.GrandTotal,
+                        PaymentType = order.PaymentType,
+                        OrderSource = order.OrderSource,
+                        OrderModel = order.OrderModel,
+                        StagingStatusId = order.StagingStatusId,
+                        AppId = order.AppId,
+                        AppOrderId = order.AppOrderId,
+                        AppOrderNumber = order.AppOrderNumber,
+                        AppOrderReceiveDatetime = order.AppOrderReceiveDatetime,
+                        AppOrderPickupDatetime = order.AppOrderPickupDatetime,
+                        PosOrderId = order.PosOrderId,
+                        PosOrderNumber = order.PosOrderNumber,
+                        StagingStatus = matchingStatus.FirstOrDefault()
+                    })
+                .ToList();
+        }
 
         stopwatch.Stop();
 
         Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
 
-        return Ok(joined);
+        return Ok(new DatatableResponse
+        {
+            Draw = request.Draw,
+            RecordsTotal = apiOrdersCount,
+            RecordsFiltered = apiOrdersCount,
+            Data = joinedApiOrders
+        });
     }
 
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
