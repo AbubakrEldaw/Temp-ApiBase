@@ -1358,8 +1358,8 @@ public class ReportsController : Controller
             (
                 ao =>
                     (string.IsNullOrEmpty(request.Search.Value) ? true : ao.AppOrderNumber.Contains(request.Search.Value)) &&
-                    ao.AppOrderReceiveDatetime >= request.From.Value.Date &&
-                    ao.AppOrderReceiveDatetime <= request.To.Value.Date &&
+                    ao.AppOrderReceiveDatetime.Date >= request.From.Value.Date &&
+                    ao.AppOrderReceiveDatetime.Date <= request.To.Value.Date &&
                     (request.Branches.Any() ? request.Branches.Contains(ao.BranchId) : true)
             )
             .AsNoTracking()
@@ -1374,8 +1374,8 @@ public class ReportsController : Controller
                 (
                     ao =>
                         (string.IsNullOrEmpty(request.Search.Value) ? true : ao.AppOrderNumber.Contains(request.Search.Value)) &&
-                        ao.AppOrderReceiveDatetime >= request.From.Value.Date &&
-                        ao.AppOrderReceiveDatetime <= request.To.Value.Date &&
+                        ao.AppOrderReceiveDatetime.Date >= request.From.Value.Date &&
+                        ao.AppOrderReceiveDatetime.Date <= request.To.Value.Date &&
                         (request.Branches.Any() ? request.Branches.Contains(ao.BranchId) : true)
                 )
                 .AsNoTracking();
