@@ -10,7 +10,9 @@ using APIBase.Services;
 using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
 using NuGet.Packaging;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -1464,6 +1466,119 @@ public class ReportsController : Controller
         });
     }
 
+    [HttpPost("VoidOrders")]
+    public async Task<IActionResult> VoidedOrders([FromBody] DatatableAPIRequest request)
+    {
+        request.Branches ??= new HashSet<string>();
+
+        if (request.From == null || request.To == null)
+        {
+            throw new Exception();
+        }
+
+        // todo
+        if (request.From == null || request.To == null)
+        {
+            throw new Exception();
+        }
+
+        int? orderNumber = null;
+
+        if (int.TryParse(request.Search.Value, out int result))
+        {
+            orderNumber = result;
+        }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        var groupedQuery = _context.OrderItems
+            .Where
+            (
+                oi =>
+                    oi.Void &&
+                    // todo
+                    //(orderNumber == null ? true : oi.OrderNumber == orderNumber.Value) &&
+                    oi.VoidAt.Value.Date >= request.From.Value.Date &&
+                    oi.VoidAt.Value.Date <= request.To.Value.Date &&
+                    (request.Branches.Any() ? request.Branches.Contains(oi.OrderHeader.BranchId) : true)
+            )
+            .GroupBy(oi => new group()
+            {
+                VoidBy = oi.VoidBy,
+                BranchId = oi.OrderHeader.BranchId
+            })
+            .AsNoTracking();
+
+        int employeeVoidedItemsCount = await groupedQuery.CountAsync();
+
+        List<EmployeeVoidItems> joinedEmployeesVoidedItems = [];
+
+        if (employeeVoidedItemsCount > 0)
+        {
+            var sortedQuery = ApplyEmployeeVoidItemSorting(groupedQuery, request.Order);
+
+            Dictionary<string, Employee> employees = await _context.Employees
+                .Where(emp => request.Branches.Any() ? request.Branches.Contains(emp.BranchId) : true)
+                .ToDictionaryAsync(emp => emp.Id);
+
+            var list = await sortedQuery
+                .Skip(request.Start)
+                .Take(request.Length)
+                .Select(g => new
+                {
+                    EmployeeId = g.Key.VoidBy,
+                    BranchId = g.Key.BranchId,
+                    Total = g.Sum(vi => vi.Total),
+                })
+                .ToListAsync();
+
+            joinedEmployeesVoidedItems = list
+                .Select(vo => new EmployeeVoidItems()
+                {
+                    VoidBy = vo.EmployeeId,
+                    EmployeeName = employees.TryGetValue(vo.EmployeeId, out var emp) ? emp.Name : null,
+                    BranchId = vo.BranchId,
+                    Total = vo.Total,
+                })
+                .ToList();
+
+            //joinedVoidOrders = voidedOrders
+            //    .Select(vo => new EmployeeVoidItems()
+            //    {
+            //        OrderNumber = vo.OrderNumber,
+            //        BranchId = vo.BranchId,
+            //        VoidBy = vo.VoidBy,
+            //        VoidAt = vo.VoidAt,
+            //        VoidReasonId = vo.VoidReasonId,
+            //        VoidReason = voidReasons.TryGetValue(vo.VoidReasonId, out var r) ? new Models.LocalizedName()
+            //        {
+            //            Name = r.Name,
+            //            Sname = r.Sname,
+            //        } : null,
+            //        VoidTypeId = vo.VoidTypeId,
+            //        VoidType = voidTypes.TryGetValue(vo.VoidTypeId, out var t) ? new Models.LocalizedName()
+            //        {
+            //            Name = t.Name,
+            //            Sname = t.Sname,
+            //        } : null,
+            //    })
+            //    .ToList();
+        }
+
+        stopwatch.Stop();
+
+        Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
+
+        return Ok(new DatatableResponse
+        {
+            Draw = request.Draw,
+            RecordsTotal = employeeVoidedItemsCount,
+            RecordsFiltered = employeeVoidedItemsCount,
+            Data = joinedEmployeesVoidedItems
+        });
+    }
     private async Task<List<SalesReportByDateModel>> GetSalesByDateAsync(DateTime from, DateTime to, string branches = "all")
     {
 
@@ -1799,5 +1914,82 @@ public class ReportsController : Controller
         .AsNoTracking().ToListAsync();
 
         return result;
+    }
+
+    private static IQueryable<IGrouping<group, OrderItem>> ApplyEmployeeVoidItemSorting(IQueryable<IGrouping<group, OrderItem>> query, List<Order> columnOrders)
+    {
+        if (columnOrders == null || columnOrders.Count == 0)
+            return query; // Return original query with all filters intact
+
+        IOrderedQueryable<IGrouping<group, OrderItem>> orderedQuery = null;
+
+        for (int i = 0; i < columnOrders.Count; i++)
+        {
+            var currentOrder = columnOrders[i];
+            bool isDescending = currentOrder.Dir == "desc";
+
+            if (orderedQuery == null)
+            {
+                // First ordering - apply to the original filtered query
+                orderedQuery = currentOrder.Column switch
+                {
+                    0 => isDescending
+                         ? query.OrderByDescending(g => g.Key.VoidBy)
+                         : query.OrderBy(g => g.Key.VoidBy),
+                    1 => isDescending
+                        ? query.OrderByDescending(g => g.Key.BranchId)
+                        : query.OrderBy(g => g.Key.BranchId),
+                    2 => isDescending
+                        ? query.OrderByDescending(g => g.Sum(x => x.Total))
+                        : query.OrderBy(g => g.Sum(x => x.Total)),
+                    _ => isDescending
+                        ? query.OrderByDescending(g => g.Key.VoidBy)
+                        : query.OrderBy(g => g.Key.VoidBy)
+                };
+            }
+            else
+            {
+                // Subsequent orderings
+                orderedQuery = currentOrder.Column switch
+                {
+                    0 => isDescending
+                         ? orderedQuery.ThenByDescending(g => g.Key.VoidBy)
+                         : orderedQuery.ThenBy(g => g.Key.VoidBy),
+                    1 => isDescending
+                        ? orderedQuery.ThenByDescending(g => g.Key.BranchId)
+                        : orderedQuery.ThenBy(g => g.Key.BranchId),
+                    2 => isDescending
+                        ? orderedQuery.ThenByDescending(g => g.Sum(x => x.Total))
+                        : orderedQuery.ThenBy(g => g.Sum(x => x.Total)),
+                    _ => isDescending
+                        ? orderedQuery.ThenByDescending(g => g.Key.VoidBy)
+                        : orderedQuery.ThenBy(g => g.Key.VoidBy)
+                };
+            }
+        }
+
+        return orderedQuery ?? query;
+    }
+
+    private static IQueryable<IGrouping<string, OrderItem>> ApplyOrderingAscending(IQueryable<IGrouping<string, OrderItem>> query, int column)
+    {
+        return column switch
+        {
+            0 => query.OrderBy(g => g.Key),
+            1 => query.OrderBy(g => g.Key), // Same as case 0 in your original code
+            2 => query.OrderBy(g => g.Sum(x => x.Total)),
+            _ => query.OrderBy(g => g.Key)  // Default case
+        };
+    }
+
+    private static IQueryable<IGrouping<string, OrderItem>> ApplyOrderingDescending(IQueryable<IGrouping<string, OrderItem>> query, int column)
+    {
+        return column switch
+        {
+            0 => query.OrderByDescending(g => g.Key),
+            1 => query.OrderByDescending(g => g.Key),
+            2 => query.OrderByDescending(g => g.Sum(x => x.Total)),
+            _ => query.OrderByDescending(g => g.Key)
+        };
     }
 }

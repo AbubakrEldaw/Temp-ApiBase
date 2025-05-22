@@ -358,5 +358,16 @@ namespace APIBase.Models.ReportsModels
         public dynamic Data { get; set; }
     }
 
-
+    public partial class group
+    {
+        public string VoidBy { get; set; }
+        public string BranchId { get; set; }
+    }
+    public partial class EmployeeVoidItems
+    {
+        public string VoidBy { get; set; }
+        public string EmployeeName { get; set; }
+        public string BranchId { get; set; }
+        public decimal Total { get; set; }
+    }
 }
