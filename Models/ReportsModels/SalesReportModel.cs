@@ -357,13 +357,14 @@ namespace APIBase.Models.ReportsModels
         public Dictionary<string, string> Types { get; set; }
         public dynamic Data { get; set; }
     }
-
-    public partial class group
+    
+    public partial class VoidItemsByEmployeeGrouping
     {
         public string VoidBy { get; set; }
         public string BranchId { get; set; }
     }
-    public partial class EmployeeVoidItems
+
+    public partial class VoidItemsByEmployee
     {
         public string VoidBy { get; set; }
         public string EmployeeName { get; set; }

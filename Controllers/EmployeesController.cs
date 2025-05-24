@@ -1,5 +1,10 @@
-﻿using APIBase.Models.Master;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
+using APIBase.Models.DTOs.ApiOrder;
+using APIBase.Models.DTOs.OrderHeader;
+using APIBase.Models.Master;
 using APIBase.Models.POS;
+using APIBase.Models.ReportsModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +52,51 @@ public class EmployeesController : ControllerBase
         }
 
         return employee;
+    }
+
+    [Authorize]
+    [HttpGet("{id}/VoidOrders")]
+    public async Task<ActionResult<List<VoidOrderSummary>>> GetVoidOrders(string id)
+    {
+        // todo filter by date
+        var voidedOrderHeadersIds = await _context.OrderItems
+            .AsNoTracking()
+            .Where
+            (
+                oi =>
+                    oi.Void && oi.VoidBy == id
+            )
+            .Select(oi => oi.OrderHeaderId)
+            .ToListAsync();
+
+        List<VoidOrderSummary> voidedOrderHeaders = await _context.OrderHeaders
+            .AsNoTracking()
+            .Where(oh => voidedOrderHeadersIds.Contains(oh.Id))
+            .Select(oh => new VoidOrderSummary()
+            {
+                Id = oh.Id,
+                OrderNumber = oh.OrderNumber,
+                //Items = oh.OrderItems.Select(oi => new OrderItemSummary()
+                //{
+                //    Quantity = oi.Quantity,
+                //    Price = oi.Price,
+                //    Total = oi.Total,
+                //    IsVoid = oi.Void,
+                //    Name = new Models.LocalizedName()
+                //    {
+                //        Name = oi.Item.Name ?? "",
+                //        Sname = oi.Item.Sname ?? "",
+                //    }
+                //})
+                //.ToList(),
+                IsVoid = oh.OrderItems.All(oi => oi.Void),
+                VoidAt = oh.VoidAt.Value,
+                Total = oh.Total,
+                TotalVoid = oh.OrderItems.Where(oi => oi.Void).Sum(oi => oi.Total),
+            })
+            .ToListAsync();
+
+        return voidedOrderHeaders;
     }
 }
 

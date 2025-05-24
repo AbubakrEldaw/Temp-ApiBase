@@ -1,4 +1,6 @@
 ﻿using APIBase.Helpers;
+using APIBase.Models.DTOs.ApiOrder;
+using APIBase.Models.DTOs.OrderHeader;
 using APIBase.Models.Master;
 using APIBase.Models.POS;
 using APIBase.Services;
@@ -8,6 +10,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Data;
+using System.Diagnostics;
 
 namespace APIBase.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
@@ -66,5 +69,48 @@ public class OrderHeadersController : ControllerBase
         }
     }
 
+    [Authorize]
+    [HttpGet("{id}/VoidDetails")]
+    public async Task<ActionResult<VoidOrderSummary>> GetVoidOrderDetails(Guid id)
+    {
+        var oi = await _context.OrderItems
+            .Where(oi => oi.Id == id)
+            .Select(oi => new OrderItemSummary()
+            {
+
+                Quantity = oi.Quantity,
+                Price = oi.Price,
+                Total = oi.Total,
+                IsVoid = oi.Void,
+                Name = new Models.LocalizedName()
+                {
+                    Name = oi.Item.Name ?? "",
+                    Sname = oi.Item.Sname ?? "",
+                }
+            })
+            .OrderByDescending(oi => oi.Total)
+            .ToListAsync();
+
+        var oh = await _context.OrderHeaders
+            //.Include(x => x.OrderSource)
+            //.Include(x => x.DiningOption)
+            //.Include(x => x.Branch).ThenInclude(x => x.ReceiptSetting)
+            //.Include(x => x.Waiter)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        var q = new VoidOrderSummary()
+        {
+            Id = oh.Id,
+            OrderNumber = oh.OrderNumber,
+            IsVoid = oh.OrderItems.All(oi => oi.Void),
+            VoidAt = oh.VoidAt.Value,
+            Total = oh.Total,
+            TotalVoid = oh.OrderItems.Where(oi => oi.Void).Sum(oi => oi.Total),
+            Items = oi
+        };
+
+        return q;
+    }
 }
 
