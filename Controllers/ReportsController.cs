@@ -1477,22 +1477,12 @@ public class ReportsController : Controller
             throw new Exception();
         }
 
-        // todo
         if (request.From == null || request.To == null)
         {
             throw new Exception();
         }
 
-        //int? orderNumber = null;
-
-        //if (int.TryParse(request.Search.Value, out int result))
-        //{
-        //    orderNumber = result;
-        //}
-
         await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
-
-        var stopwatch = Stopwatch.StartNew();
 
         var groupedQuery = _context.OrderItems
             .Where
@@ -1544,10 +1534,6 @@ public class ReportsController : Controller
                 })
                 .ToList();
         }
-
-        stopwatch.Stop();
-
-        Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
 
         return Ok(new DatatableResponse
         {

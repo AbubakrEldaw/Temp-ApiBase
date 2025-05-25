@@ -20,8 +20,7 @@ namespace APIBase.Models.DTOs.ApiOrder
         public decimal Price { get; set; }
         public decimal Total { get; set; }
         public bool IsVoid { get; set; }
-        //public LocalizedName? VoidType { get; set; }
-        //public LocalizedName? VoidReason{ get; set; }
+        public string VoidTypeId { get; set; }
         public LocalizedName Name { get; set; }
     }
 

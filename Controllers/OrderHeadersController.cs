@@ -73,8 +73,11 @@ public class OrderHeadersController : ControllerBase
     [HttpGet("{id}/VoidDetails")]
     public async Task<ActionResult<VoidOrderSummary>> GetVoidOrderDetails(Guid id)
     {
+        //var x = await _context.OrderHeaders.Where(oh => !string.IsNullOrEmpty(oh.VoidReasonId)).ToListAsync();
+        //var z = await _context.OrderItems.Where(oh => oh.OrderHeader.OrderNumber == 17).ToListAsync();
+
         var oi = await _context.OrderItems
-            .Where(oi => oi.Id == id)
+            .Where(oi => oi.OrderHeaderId == id)
             .Select(oi => new OrderItemSummary()
             {
 
@@ -82,6 +85,7 @@ public class OrderHeadersController : ControllerBase
                 Price = oi.Price,
                 Total = oi.Total,
                 IsVoid = oi.Void,
+                VoidTypeId = oi.VoidTypeId,
                 Name = new Models.LocalizedName()
                 {
                     Name = oi.Item.Name ?? "",
@@ -92,25 +96,23 @@ public class OrderHeadersController : ControllerBase
             .ToListAsync();
 
         var oh = await _context.OrderHeaders
-            //.Include(x => x.OrderSource)
-            //.Include(x => x.DiningOption)
-            //.Include(x => x.Branch).ThenInclude(x => x.ReceiptSetting)
-            //.Include(x => x.Waiter)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        var q = new VoidOrderSummary()
+        var response = new VoidOrderSummary()
         {
             Id = oh.Id,
             OrderNumber = oh.OrderNumber,
             IsVoid = oh.OrderItems.All(oi => oi.Void),
-            VoidAt = oh.VoidAt.Value,
+            VoidAt = oh.VoidAt,
+            VoidTypeId = oh.VoidTypeId,
+            VoidReasonId = oh.VoidReasonId,
             Total = oh.Total,
             TotalVoid = oh.OrderItems.Where(oi => oi.Void).Sum(oi => oi.Total),
             Items = oi
         };
 
-        return q;
+        return response;
     }
 }
 

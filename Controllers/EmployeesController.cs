@@ -56,18 +56,22 @@ public class EmployeesController : ControllerBase
 
     [Authorize]
     [HttpGet("{id}/VoidOrders")]
-    public async Task<ActionResult<List<VoidOrderSummary>>> GetVoidOrders(string id)
+    public async Task<ActionResult<List<VoidOrderSummary>>> GetVoidOrders(string id, [FromQuery] DateTime from, [FromQuery] DateTime to)
     {
-        // todo filter by date
         var voidedOrderHeadersIds = await _context.OrderItems
             .AsNoTracking()
             .Where
             (
                 oi =>
-                    oi.Void && oi.VoidBy == id
+                    oi.Void && 
+                    oi.VoidBy == id &&
+                    oi.VoidAt.Value.Date >= from.Date &&
+                    oi.VoidAt.Value.Date <= to.Date
             )
             .Select(oi => oi.OrderHeaderId)
             .ToListAsync();
+
+        FrozenDictionary<string, VoidType> voidTypes = _context.VoidTypes.ToFrozenDictionary(emp => emp.Id);
 
         List<VoidOrderSummary> voidedOrderHeaders = await _context.OrderHeaders
             .AsNoTracking()
@@ -76,21 +80,10 @@ public class EmployeesController : ControllerBase
             {
                 Id = oh.Id,
                 OrderNumber = oh.OrderNumber,
-                //Items = oh.OrderItems.Select(oi => new OrderItemSummary()
-                //{
-                //    Quantity = oi.Quantity,
-                //    Price = oi.Price,
-                //    Total = oi.Total,
-                //    IsVoid = oi.Void,
-                //    Name = new Models.LocalizedName()
-                //    {
-                //        Name = oi.Item.Name ?? "",
-                //        Sname = oi.Item.Sname ?? "",
-                //    }
-                //})
-                //.ToList(),
                 IsVoid = oh.OrderItems.All(oi => oi.Void),
                 VoidAt = oh.VoidAt.Value,
+                VoidReasonId = oh.VoidReasonId,
+                VoidTypeId = oh.VoidTypeId,
                 Total = oh.Total,
                 TotalVoid = oh.OrderItems.Where(oi => oi.Void).Sum(oi => oi.Total),
             })
