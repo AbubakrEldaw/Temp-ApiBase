@@ -31,7 +31,6 @@ public class OrderHeadersController : ControllerBase
         _masterContext = masterContext;
         _encMaster = encMaster;
     }
-
  
     [HttpGet("{id}")]
     public async Task<ActionResult<OrderHeader>> GetOrderHeader(string id)
@@ -73,9 +72,6 @@ public class OrderHeadersController : ControllerBase
     [HttpGet("{id}/VoidDetails")]
     public async Task<ActionResult<VoidOrderSummary>> GetVoidOrderDetails(Guid id)
     {
-        //var x = await _context.OrderHeaders.Where(oh => !string.IsNullOrEmpty(oh.VoidReasonId)).ToListAsync();
-        //var z = await _context.OrderItems.Where(oh => oh.OrderHeader.OrderNumber == 17).ToListAsync();
-
         var oi = await _context.OrderItems
             .Where(oi => oi.OrderHeaderId == id)
             .Select(oi => new OrderItemSummary()

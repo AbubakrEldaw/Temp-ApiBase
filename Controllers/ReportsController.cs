@@ -1883,7 +1883,7 @@ public class ReportsController : Controller
     private static IQueryable<IGrouping<VoidItemsByEmployeeGrouping, OrderItem>> ApplyEmployeeVoidItemSorting(IQueryable<IGrouping<VoidItemsByEmployeeGrouping, OrderItem>> query, List<Order> columnOrders)
     {
         if (columnOrders == null || columnOrders.Count == 0)
-            return query; // Return original query with all filters intact
+            return query;
 
         IOrderedQueryable<IGrouping<VoidItemsByEmployeeGrouping, OrderItem>> orderedQuery = null;
 
@@ -1894,16 +1894,18 @@ public class ReportsController : Controller
 
             if (orderedQuery == null)
             {
-                // First ordering - apply to the original filtered query
                 orderedQuery = currentOrder.Column switch
                 {
                     0 => isDescending
                          ? query.OrderByDescending(g => g.Key.VoidBy)
                          : query.OrderBy(g => g.Key.VoidBy),
                     1 => isDescending
+                        ? query.OrderByDescending(g => g.Key.VoidBy)
+                        : query.OrderBy(g => g.Key.VoidBy),
+                    2 => isDescending
                         ? query.OrderByDescending(g => g.Key.BranchId)
                         : query.OrderBy(g => g.Key.BranchId),
-                    2 => isDescending
+                    3 => isDescending
                         ? query.OrderByDescending(g => g.Sum(x => x.Total))
                         : query.OrderBy(g => g.Sum(x => x.Total)),
                     _ => isDescending
@@ -1913,16 +1915,18 @@ public class ReportsController : Controller
             }
             else
             {
-                // Subsequent orderings
                 orderedQuery = currentOrder.Column switch
                 {
                     0 => isDescending
                          ? orderedQuery.ThenByDescending(g => g.Key.VoidBy)
                          : orderedQuery.ThenBy(g => g.Key.VoidBy),
                     1 => isDescending
+                         ? orderedQuery.ThenByDescending(g => g.Key.VoidBy)
+                         : orderedQuery.ThenBy(g => g.Key.VoidBy),
+                    2 => isDescending
                         ? orderedQuery.ThenByDescending(g => g.Key.BranchId)
                         : orderedQuery.ThenBy(g => g.Key.BranchId),
-                    2 => isDescending
+                    3 => isDescending
                         ? orderedQuery.ThenByDescending(g => g.Sum(x => x.Total))
                         : orderedQuery.ThenBy(g => g.Sum(x => x.Total)),
                     _ => isDescending

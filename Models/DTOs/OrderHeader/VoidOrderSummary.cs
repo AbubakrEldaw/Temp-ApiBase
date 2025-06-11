@@ -1,7 +1,14 @@
 using APIBase.Models.DTOs.ApiOrder;
+using APIBase.Models.POS;
 
 namespace APIBase.Models.DTOs.OrderHeader
 {
+    public class VoidOrderByEmployeeSummary
+    {
+        public Employee Employee { get; set; }
+        public List<VoidOrderSummary> VoidOrders { get; set; } = [];
+    }
+
     public class VoidOrderSummary
     {
         public Guid Id { get; set; }
