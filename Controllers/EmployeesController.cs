@@ -56,18 +56,14 @@ public class EmployeesController : ControllerBase
 
     [Authorize]
     [HttpGet("{id}/VoidOrders")]
-    public async Task<ActionResult<VoidOrderByEmployeeSummary>> GetVoidOrders(string id, [FromQuery] DateTime from, [FromQuery] DateTime to)
+    public async Task<ActionResult<List<VoidOrderSummary>>> GetVoidOrders(string id, [FromQuery] DateTime from, [FromQuery] DateTime to)
     {
-        var employee = await _context.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(emp => emp.Id == id);
-
         var voidedOrderHeadersIds = await _context.OrderItems
             .AsNoTracking()
             .Where
             (
                 oi =>
-                    oi.Void &&
+                    oi.Void && 
                     oi.VoidBy == id &&
                     oi.VoidAt.Value.Date >= from.Date &&
                     oi.VoidAt.Value.Date <= to.Date
@@ -93,11 +89,7 @@ public class EmployeesController : ControllerBase
             })
             .ToListAsync();
 
-        return new VoidOrderByEmployeeSummary()
-        {
-            Employee = employee,
-            VoidOrders = voidedOrderHeaders
-        };
+        return voidedOrderHeaders;
     }
 }
 
