@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using APIBase.Models.Enums;
 using APIBase.Models.POS;
 #nullable disable
 
@@ -351,13 +353,24 @@ namespace APIBase.Models.ReportsModels
         public string PaymentTypeId { get; set; }
     }
 
-    public partial class ReportWrapper
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ReportFieldTypeAttribute : Attribute
     {
-        public string Id { get; set; }
-        public Dictionary<string, string> Types { get; set; }
+        public string Type { get; }
+
+        public ReportFieldTypeAttribute(string type)
+        {
+            Type = type;
+        }
+    }
+
+    public class ReportWrapper
+    {
+        public SalesReports Report { get; set; }
+        public Dictionary<string, string> ColumnsTypes { get; set; }
         public dynamic Data { get; set; }
     }
-    
+
     public partial class VoidItemsByEmployeeGrouping
     {
         public string VoidBy { get; set; }
@@ -370,5 +383,31 @@ namespace APIBase.Models.ReportsModels
         public string EmployeeName { get; set; }
         public string BranchId { get; set; }
         public decimal Total { get; set; }
+    }
+
+    public partial class PaymentTypeModel
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Sname { get; set; }
+        public string TotalAmount { get; set; }
+        public string RefundAmount { get; set; }
+        public string NetAmount { get; set; }
+    }
+    
+    public partial class PaymentTypeByBranchModel : PaymentTypeModel
+    {
+        public string BranchId { get; set; }
+    }
+    
+    public partial class PaymentTypeByDateModel : PaymentTypeModel
+    {
+        public DateTime Date { get; set; }
+    }
+    
+    public partial class PaymentTypeByBranchAndDateModel : PaymentTypeByBranchModel
+    {
+        public string BranchId { get; set; }
+        public DateTime Date { get; set; }
     }
 }
