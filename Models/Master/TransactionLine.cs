@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable disable
-
 namespace APIBase.Models.Master
 {
     public partial class TransactionLine
@@ -15,10 +13,19 @@ namespace APIBase.Models.Master
         public Guid Id { get; set; }
         public Guid TransactionId { get; set; }
         public int OrderIndex { get; set; }
-        public string Type { get; set; }
-        public string ReferenceId { get; set; }
-        public string Description { get; set; }
-        public string Sdescription { get; set; }
+        /// <summary>
+        /// License, Feature, App
+        /// </summary>
+        public string Type { get; set; } = null!;
+        /// <summary>
+        /// License, Feature, or App Id
+        /// </summary>
+        public string ReferenceId { get; set; } = null!;
+        /// <summary>
+        /// Complete name of the purchased item
+        /// </summary>
+        public string Description { get; set; } = null!;
+        public string Sdescription { get; set; } = null!;
         public decimal Price { get; set; }
         public decimal BasePrice { get; set; }
         public decimal DiscountAmount { get; set; }
@@ -28,8 +35,10 @@ namespace APIBase.Models.Master
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public bool AutoRenew { get; set; }
+        public string PlanId { get; set; } = null!;
 
-        public virtual Transaction Transaction { get; set; }
+        public virtual Plan Plan { get; set; } = null!;
+        public virtual Transaction Transaction { get; set; } = null!;
         public virtual ICollection<CompanyLicense> CompanyLicenses { get; set; }
     }
 }

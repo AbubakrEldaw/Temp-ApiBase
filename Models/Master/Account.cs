@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable disable
-
 namespace APIBase.Models.Master
 {
     public partial class Account
@@ -12,8 +10,9 @@ namespace APIBase.Models.Master
             Companies = new HashSet<Company>();
         }
 
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string? Sname { get; set; }
 
         public virtual ICollection<Company> Companies { get; set; }
     }

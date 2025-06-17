@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable disable
-
 namespace APIBase.Models.Master
 {
     public partial class SubscriptionCategory
@@ -14,9 +12,9 @@ namespace APIBase.Models.Master
             CompanyLicenses = new HashSet<CompanyLicense>();
         }
 
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Sname { get; set; }
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Sname { get; set; } = null!;
 
         public virtual ICollection<CompanyApp> CompanyApps { get; set; }
         public virtual ICollection<CompanyFeature> CompanyFeatures { get; set; }

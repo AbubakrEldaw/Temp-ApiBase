@@ -38,7 +38,7 @@ public class CompanyController : ControllerBase
     public async Task<ActionResult<Plan>> GetCompanyPlan()
     {
         var _companyId = User.Claims.Where(x => x.Type == "CompanyId").FirstOrDefault().Value;
-        var _plan = await _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.PlanFeatures).FirstOrDefaultAsync(x => x.CompanyId == _companyId);
+        var _plan = await _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.Features).FirstOrDefaultAsync(x => x.CompanyId == _companyId);
         if (_plan != null)
         {
             return Ok(_plan);

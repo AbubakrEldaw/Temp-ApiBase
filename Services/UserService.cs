@@ -170,17 +170,18 @@ namespace APIBase.Services
                 }
             }
 
-            var _plan = _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.PlanFeatures).FirstOrDefault(x => x.CompanyId == user.CompanyId);
+            //var _plan = _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.PlanFeatures).FirstOrDefault(x => x.CompanyId == user.CompanyId);
+            var _plan = _MasterContext.CompanyPlans.Include(x => x.Plan).ThenInclude(x => x.Features).FirstOrDefault(x => x.CompanyId == user.CompanyId);
             if (_plan != null)
             {
-                foreach (var feature in _plan.Plan.PlanFeatures)
+                foreach (var feature in _plan.Plan.Features)
                 {
-                    claims.AddClaim(new Claim(ClaimTypes.Role, feature.FeatureId));
+                    claims.AddClaim(new Claim(ClaimTypes.Role, feature.Id));
                 }
 
-                var planApps = _MasterContext.MarketPlaceAppPlanAvailabilities
-                    .Where(x => x.MarketPlaceAppId.Contains(_plan.PlanId))
-                    .Select(x => x.MarketPlaceAppId)
+                var planApps = _MasterContext.MarketPlaceApps
+                    .Where(x => x.Plans.Any(plan => plan.Id == _plan.PlanId))
+                    .Select(x => x.Id)
                     .ToList();
 
                 var paidCompanyApps = _MasterContext.TransactionLines

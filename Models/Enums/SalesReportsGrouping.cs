@@ -1,10 +1,11 @@
 ﻿
 namespace APIBase.Models.Enums
 {
-    public enum SalesReports
+    public enum SalesReportsGrouping
     {
         Date,
         Branch,
+        Hour,
         Item,
         Modifier,
         ItemGroup,

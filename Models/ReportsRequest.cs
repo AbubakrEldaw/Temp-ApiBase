@@ -13,7 +13,7 @@ namespace APIBase.Models.CustomModels
 
         public ReportsRequest(string branches, DateTime from, DateTime to, string itemGroups, string orderSources)
         {
-            if (from > To)
+            if (from > to)
             {
                 throw new Exception();
             }

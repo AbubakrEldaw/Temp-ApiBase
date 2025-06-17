@@ -38,7 +38,7 @@ public class MarketPlaceController : Controller
             _blackListedAppsIds = _blackListedAppsIds.Except(extraApps).ToList();
 
             var MPModel = await _MasterContext.MarketPlaceCategories.Include(x => x.MarketPlaceApps.Where(x => !_blackListedAppsIds.Contains(x.Id) && x.Status == "a")).ThenInclude(x => x.CompanyApps.Where(x => x.CompanyId == _companyId))
-                                                                    .Include(x => x.MarketPlaceApps.Where(x => !_blackListedAppsIds.Contains(x.Id) && x.Status == "a")).ThenInclude(x => x.MarketPlaceAppPlanAvailabilities)
+                                                                    .Include(x => x.MarketPlaceApps.Where(x => !_blackListedAppsIds.Contains(x.Id) && x.Status == "a")).ThenInclude(x => x.Plans)
                                                                     .AsNoTracking().ToListAsync();
 
             var companyapps = MPModel.SelectMany(x => x.MarketPlaceApps).SelectMany(x => x.CompanyApps);

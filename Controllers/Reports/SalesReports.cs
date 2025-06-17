@@ -27,11 +27,11 @@ public partial class ReportsController : Controller
     [HttpGet("Sales")]
     public async Task<ActionResult<ReportWrapper>> GetSalesReport
     (
-        [FromQuery] SalesReports reportType,
+        [FromQuery] SalesReportsGrouping reportType,
         [FromQuery] string branches,
         [FromQuery] DateTime from,
         [FromQuery] DateTime to,
-        [FromQuery] string ItemGroups = "",
+        [FromQuery] string itemGroups = "",
         [FromQuery] string orderSources = ""
     )
     {
@@ -43,24 +43,25 @@ public partial class ReportsController : Controller
                     StatusCode = 400
                 };
 
-            ReportsRequest reportsRequest = new(branches, from, to, ItemGroups, orderSources);
+            ReportsRequest reportsRequest = new(branches, from, to, itemGroups, orderSources);
 
             dynamic? data = reportType switch
             {
-                SalesReports.Date => await SalesByDateAsync(reportsRequest),
-                SalesReports.Branch => await SalesByBranchAsync(reportsRequest),
-                SalesReports.Item => await SalesByItemAsync(reportsRequest),
-                SalesReports.Modifier => await SalesByModifierAsync(reportsRequest),
-                SalesReports.ItemGroup => await SalesByItemGroupAsync(reportsRequest),
-                SalesReports.Employee => await SalesByEmployeeAsync(reportsRequest),
-                SalesReports.WorkDay => await SalesByWorkDayAsync(reportsRequest),
-                SalesReports.Shift => await SalesByShiftAsync(reportsRequest),
-                SalesReports.PaymentType => await SalesByPaymentTypeAsync(reportsRequest),
-                SalesReports.PaymentTypeByBranch => await SalesByPaymentTypeByBranchAsync(reportsRequest),
-                SalesReports.PaymentTypeByDate => await SalesByPaymentTypeByDateAsync(reportsRequest),
-                SalesReports.PaymentTypeByDateByBranch => await SalesByPaymentTypeByBranchAndDateAsync(reportsRequest),
-                SalesReports.OrderSource => await SalesByOrderSourceAsync(reportsRequest),
-                SalesReports.DiningOption => await SalesByDiningOptionAsync(reportsRequest),
+                SalesReportsGrouping.Date => await SalesByDateAsync(reportsRequest),
+                SalesReportsGrouping.Branch => await SalesByBranchAsync(reportsRequest),
+                SalesReportsGrouping.Hour => await SalesByHourAsync(reportsRequest),
+                SalesReportsGrouping.Item => await SalesByItemAsync(reportsRequest),
+                SalesReportsGrouping.Modifier => await SalesByModifierAsync(reportsRequest),
+                SalesReportsGrouping.ItemGroup => await SalesByItemGroupAsync(reportsRequest),
+                SalesReportsGrouping.Employee => await SalesByEmployeeAsync(reportsRequest),
+                SalesReportsGrouping.WorkDay => await SalesByWorkDayAsync(reportsRequest),
+                SalesReportsGrouping.Shift => await SalesByShiftAsync(reportsRequest),
+                SalesReportsGrouping.PaymentType => await SalesByPaymentTypeAsync(reportsRequest),
+                SalesReportsGrouping.PaymentTypeByBranch => await SalesByPaymentTypeByBranchAsync(reportsRequest),
+                SalesReportsGrouping.PaymentTypeByDate => await SalesByPaymentTypeByDateAsync(reportsRequest),
+                SalesReportsGrouping.PaymentTypeByDateByBranch => await SalesByPaymentTypeByBranchAndDateAsync(reportsRequest),
+                SalesReportsGrouping.OrderSource => await SalesByOrderSourceAsync(reportsRequest),
+                SalesReportsGrouping.DiningOption => await SalesByDiningOptionAsync(reportsRequest),
                 _ => null
             };
 
@@ -72,7 +73,7 @@ public partial class ReportsController : Controller
 
             return Ok(new ReportWrapper
             {
-                Report = reportType,
+                Report = reportType.ToString(),
                 ColumnsTypes = GetModelPropertyTypes(modelType),
                 Data = data
             });
@@ -90,7 +91,7 @@ public partial class ReportsController : Controller
     {
         return modelType.GetProperties()
             .ToDictionary(
-                p => p.Name,
+                p => char.ToLowerInvariant(p.Name[0]) + p.Name.Substring(1),
                 p =>
                 {
                     var typeAttr = p.GetCustomAttribute<ReportFieldTypeAttribute>();
@@ -117,22 +118,23 @@ public partial class ReportsController : Controller
             );
     }
 
-    private static readonly Dictionary<SalesReports, Type> ReportModelTypes = new()
+    private static readonly Dictionary<SalesReportsGrouping, Type> ReportModelTypes = new()
     {
-        [SalesReports.Date] = typeof(SalesReportByDateModel),
-        [SalesReports.Branch] = typeof(SalesReportByXModel),
-        [SalesReports.Item] = typeof(SalesReportByXModel),
-        [SalesReports.Modifier] = typeof(SalesReportByXModel),
-        [SalesReports.ItemGroup] = typeof(SalesReportByXModel),
-        [SalesReports.Employee] = typeof(SalesReportByXModel),
-        [SalesReports.PaymentType] = typeof(PaymentTypeModel),
-        [SalesReports.PaymentTypeByBranch] = typeof(PaymentTypeByBranchModel),
-        [SalesReports.PaymentTypeByDate] = typeof(PaymentTypeByDateModel),
-        [SalesReports.PaymentTypeByDateByBranch] = typeof(PaymentTypeByBranchAndDateModel),
-        [SalesReports.WorkDay] = typeof(SalesReportByWorkDayModel),
-        [SalesReports.Shift] = typeof(SalesReportByShiftModel),
-        [SalesReports.OrderSource] = typeof(SalesReportByXModel),
-        [SalesReports.DiningOption] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.Date] = typeof(SalesReportByDateModel),
+        [SalesReportsGrouping.Branch] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.Hour] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.Item] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.Modifier] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.ItemGroup] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.Employee] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.PaymentType] = typeof(PaymentTypeModel),
+        [SalesReportsGrouping.PaymentTypeByBranch] = typeof(PaymentTypeByBranchModel),
+        [SalesReportsGrouping.PaymentTypeByDate] = typeof(PaymentTypeByDateModel),
+        [SalesReportsGrouping.PaymentTypeByDateByBranch] = typeof(PaymentTypeByBranchAndDateModel),
+        [SalesReportsGrouping.WorkDay] = typeof(SalesReportByWorkDayModel),
+        [SalesReportsGrouping.Shift] = typeof(SalesReportByShiftModel),
+        [SalesReportsGrouping.OrderSource] = typeof(SalesReportByXModel),
+        [SalesReportsGrouping.DiningOption] = typeof(SalesReportByXModel),
     };
 
     private async Task<IEnumerable<SalesReportByDateModel>> SalesByDateAsync(ReportsRequest reportsRequest)
@@ -219,11 +221,11 @@ public partial class ReportsController : Controller
                      select new SalesReportByDateModel()
                      {
                          Date = wd.ToString("yyyy-MM-dd"),
-                         OrdersCount = ((oh?.SalesOrdersCount ?? 0) - (oh?.SalesOrdersCountReturn ?? 0)).ToString("N0"),
-                         AverageOrder = (oh == null || oh.SalesOrdersCount == 0) ? "0" : Math.Round((((oi?.ProductsBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)) / oh.SalesOrdersCount), 2).ToString("N2"),
-                         AveragePerGuest = (oh == null || oh.GuestCount == 0) ? "0" : Math.Round((((oi?.ProductsBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)) / oh.GuestCount), 2).ToString("N2"),
-                         CustomersCount = oh?.CustomerCount.ToString("N0") ?? "0",
-                         GuestsCount = oh?.GuestCount.ToString("N0") ?? "0",
+                         //OrdersCount = ((oh?.SalesOrdersCount ?? 0) - (oh?.SalesOrdersCountReturn ?? 0)).ToString("N0"),
+                         //AverageOrder = (oh == null || oh.SalesOrdersCount == 0) ? "0" : Math.Round((((oi?.ProductsBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)) / oh.SalesOrdersCount), 2).ToString("N2"),
+                         //AveragePerGuest = (oh == null || oh.GuestCount == 0) ? "0" : Math.Round((((oi?.ProductsBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)) / oh.GuestCount), 2).ToString("N2"),
+                         //CustomersCount = oh?.CustomerCount.ToString("N0") ?? "0",
+                         //GuestsCount = oh?.GuestCount.ToString("N0") ?? "0",
                          GrossSales = ((oi?.ProductsBeforeDiscount ?? 0) + (oi?.ProductsTax ?? 0) + (of?.FeesBeforeDiscount ?? 0) + (of?.FeesTax ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) - (oi?.ProductsTaxReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0) - (of?.FeesTaxReturn ?? 0)).ToString("N2"),
                          NetSales = ((oi?.ProductsBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)).ToString("N2"),
                          NetSalesWithTax = (((oi?.ProductsBeforeDiscount ?? 0) + (of?.FeesBeforeDiscount ?? 0) - (oi?.ProductsDiscount ?? 0) - (oi?.ProductsBeforeDiscountReturn ?? 0) + (oi?.ProductsDiscountReturn ?? 0) - (of?.FeesBeforeDiscountReturn ?? 0)) + ((oi?.ProductsTax ?? 0) + (of?.FeesTax ?? 0) - (oi?.ProductsTaxReturn ?? 0) - (of?.FeesTaxReturn ?? 0))).ToString("N2"),
@@ -413,11 +415,11 @@ public partial class ReportsController : Controller
                Id = c.Id,
                Name = c.Name,
                Sname = c.SName,
-               OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-               AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-               AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-               CustomersCount = c.CustomerCount.ToString("N0"),
-               GuestsCount = c.GuestCount.ToString("N0"),
+               //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+               //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+               //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+               //CustomersCount = c.CustomerCount.ToString("N0"),
+               //GuestsCount = c.GuestCount.ToString("N0"),
                GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -881,11 +883,11 @@ public partial class ReportsController : Controller
                        Id = c.Id,
                        Name = c.Name,
                        Sname = c.SName,
-                       OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-                       AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-                       AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-                       CustomersCount = c.CustomerCount.ToString("N0"),
-                       GuestsCount = c.GuestCount.ToString("N0"),
+                       //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                       //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                       //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                       //CustomersCount = c.CustomerCount.ToString("N0"),
+                       //GuestsCount = c.GuestCount.ToString("N0"),
                        GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                        NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                        NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -1249,11 +1251,11 @@ public partial class ReportsController : Controller
                   CloseAt = c.CloseAt.Value.ToString("hh:mm tt"),
                   OpenBy = c.OpenBy,
                   CloseBy = c.CloseBy,
-                  OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-                  AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-                  AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-                  CustomersCount = c.CustomerCount.ToString("N0"),
-                  GuestsCount = c.GuestCount.ToString("N0"),
+                  //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                  //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                  //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                  //CustomersCount = c.CustomerCount.ToString("N0"),
+                  //GuestsCount = c.GuestCount.ToString("N0"),
                   GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                   NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                   NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -1487,11 +1489,11 @@ public partial class ReportsController : Controller
                       ClosedAt = c.CloseAt.Value.AddHours(3).ToString("hh:mm tt"),
                       Name = c.Name,
                       Sname = c.Sname,
-                      OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-                      AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-                      AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-                      CustomersCount = c.CustomerCount.ToString("N0"),
-                      GuestsCount = c.GuestCount.ToString("N0"),
+                      //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                      //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                      //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                      //CustomersCount = c.CustomerCount.ToString("N0"),
+                      //GuestsCount = c.GuestCount.ToString("N0"),
                       GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                       NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                       NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -1672,11 +1674,11 @@ public partial class ReportsController : Controller
                    Id = c.Id,
                    Name = c.Name,
                    Sname = c.SName,
-                   OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-                   AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-                   AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-                   CustomersCount = c.CustomerCount.ToString("N0"),
-                   GuestsCount = c.GuestCount.ToString("N0"),
+                   //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                   //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                   //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                   //CustomersCount = c.CustomerCount.ToString("N0"),
+                   //GuestsCount = c.GuestCount.ToString("N0"),
                    GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                    NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                    NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -1960,11 +1962,11 @@ public partial class ReportsController : Controller
                  Id = c.Id,
                  Name = c.Name,
                  Sname = c.SName,
-                 OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
-                 AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
-                 AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
-                 CustomersCount = c.CustomerCount.ToString("N0"),
-                 GuestsCount = c.GuestCount.ToString("N0"),
+                 //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                 //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                 //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                 //CustomersCount = c.CustomerCount.ToString("N0"),
+                 //GuestsCount = c.GuestCount.ToString("N0"),
                  GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
                  NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
                  NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
@@ -1976,6 +1978,187 @@ public partial class ReportsController : Controller
                  RefundAmount = (c.ProductsBeforeDiscountReturn + c.FeesBeforeDiscountReturn).ToString("N2"),
                  RefundQuantity = (c.ProductsQuantityReturn).ToString("N2")
              }).AsNoTracking().ToListAsync();
+
+        return result;
+    }
+
+    private async Task<IEnumerable<SalesReportByHourModel>> SalesByHourAsync(ReportsRequest reportsRequest)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadUncommitted);
+
+        var result =
+               //#1 Start With workday table
+               //await _context.WorkDays.Where(x => x.OrderHeaders.Count() > 0 && x.Date >= from.Date && x.Date <= to.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.BranchId))) // sales only
+               await _context.OrderHeaders.Where(x => x.OrderStatusId == "os-paid" && x.VoidBy == null && x.WorkDay.Date >= reportsRequest.From.Date && x.WorkDay.Date <= reportsRequest.To.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.BranchId)))
+            .GroupBy(x => new { x.CreateAt.Hour }).Select(x => new
+            {
+                Hour = x.Key.Hour
+            })
+
+           //return Ok(result);
+
+           //#2 Sales Header 
+           .GroupJoin(_context.OrderHeaders.Where(x => x.OrderStatusId == "os-paid" && x.VoidBy == null && x.WorkDay.Date >= reportsRequest.From.Date && x.WorkDay.Date <= reportsRequest.To.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.BranchId)))
+           .GroupBy(x => new { x.CreateAt.Hour }).Select(x => new
+           {
+               Hour = x.Key.Hour,
+               SalesOrdersCount = x.Sum(x => !x.IsReturn ? 1 : 0),
+               SalesOrdersCountReturn = x.Sum(x => x.IsReturn ? 1 : 0),
+               CustomerCount = x.Sum(x => x.CustomerId != null ? 1 : 0),
+               GuestCount = x.Sum(x => !x.IsReturn ? (x.GuestCount ?? 1) : 0),
+           }), c => c.Hour, o => o.Hour, (c, o) => new
+           {
+               c = c,
+               o = o
+           })
+           .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+           {
+               Hour = c.c.Hour,
+               SalesOrdersCount = (o == null) ? null : (decimal?)o.SalesOrdersCount,
+               SalesOrdersCountReturn = (o == null) ? null : (decimal?)o.SalesOrdersCountReturn,
+               CustomerCount = (o == null) ? null : (decimal?)o.CustomerCount,
+               GuestCount = (o == null) ? null : (decimal?)o.GuestCount,
+           })
+
+
+           //#3Order detail table // sales only
+           .GroupJoin(_context.OrderItems.Where(x => !x.Void && x.OrderHeader.VoidBy == null && x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= reportsRequest.From.Date && x.OrderHeader.WorkDay.Date <= reportsRequest.To.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.OrderHeader.WorkDay.BranchId)))
+           .Select(oi => new
+           {
+               oi,
+               oi.OrderHeader.CreateAt.Hour,
+               oi.OrderHeader.IsReturn,
+           })
+           .GroupBy(x => new { x.Hour }).Select(x => new
+           {
+               Hour = x.Key.Hour,
+               ProductsBeforeDiscount = x.Sum(z => z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total + z.oi.DiscountAmount - z.oi.VatAmount) : (z.oi.Total + z.oi.DiscountAmount))),
+               ProductsBeforeDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total + z.oi.DiscountAmount - z.oi.VatAmount) : (z.oi.Total + z.oi.DiscountAmount))),
+               ProductsDiscount = x.Sum(z => z.IsReturn ? 0 : (z.oi.DiscountAmount + z.oi.HeaderDiscountAmount)),
+               ProductsDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : (z.oi.DiscountAmount + z.oi.HeaderDiscountAmount)),
+               ProductsTax = x.Sum(z => z.IsReturn ? 0 : z.oi.VatAmount),
+               ProductsTaxReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.VatAmount),
+               ProductsQuantity = x.Sum(z => z.IsReturn ? 0 : z.oi.Quantity),
+               ProductsQuantityReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.Quantity),
+           }), c => c.Hour, o => o.Hour, (c, o) => new
+           {
+               c = c,
+               o = o
+           })
+           .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+           {
+               Hour = c.c.Hour,
+               SalesOrdersCount = c.c.SalesOrdersCount,
+               SalesOrdersCountReturn = c.c.SalesOrdersCountReturn,
+               CustomerCount = c.c.CustomerCount,
+               GuestCount = c.c.GuestCount,
+               //Plus
+               ProductsBeforeDiscount = (o == null) ? null : (decimal?)o.ProductsBeforeDiscount,
+               ProductsBeforeDiscountReturn = (o == null) ? null : (decimal?)o.ProductsBeforeDiscountReturn,
+               ProductsDiscount = (o == null) ? null : (decimal?)o.ProductsDiscount,
+               ProductsDiscountReturn = (o == null) ? null : (decimal?)o.ProductsDiscountReturn,
+               ProductsTax = (o == null) ? null : (decimal?)o.ProductsTax,
+               ProductsTaxReturn = (o == null) ? null : (decimal?)o.ProductsTaxReturn,
+               ProductsQuantity = (o == null) ? null : (decimal?)o.ProductsQuantity,
+               ProductsQuantityReturn = (o == null) ? null : (decimal?)o.ProductsQuantityReturn
+           })
+
+           //#4 Sales Void
+           .GroupJoin(_context.OrderItems.Where(x => x.Void && (x.KotPrinted ?? false == true) && x.OrderHeader.WorkDay.Date >= reportsRequest.From.Date && x.OrderHeader.WorkDay.Date <= reportsRequest.To.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.OrderHeader.WorkDay.BranchId)))
+           .GroupBy(x => new { x.OrderHeader.CreateAt.Hour }).Select(x => new
+           {
+               Hour = x.Key.Hour,
+               ProductsVoidQuantity = x.Sum(z => z.Quantity),
+               ProductsVoidAmount = x.Sum(z => z.Total)
+           }), c => c.Hour, o => o.Hour, (c, o) => new
+           {
+               c = c,
+               o = o
+           })
+           .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+           {
+               Hour = c.c.Hour,
+               SalesOrdersCount = c.c.SalesOrdersCount,
+               SalesOrdersCountReturn = c.c.SalesOrdersCountReturn,
+               CustomerCount = c.c.CustomerCount,
+               GuestCount = c.c.GuestCount,
+               ProductsBeforeDiscount = c.c.ProductsBeforeDiscount,
+               ProductsBeforeDiscountReturn = c.c.ProductsBeforeDiscountReturn,
+               ProductsDiscount = c.c.ProductsDiscount,
+               ProductsDiscountReturn = c.c.ProductsDiscountReturn,
+               ProductsTax = c.c.ProductsTax,
+               ProductsTaxReturn = c.c.ProductsTaxReturn,
+               ProductsQuantity = c.c.ProductsQuantity,
+               ProductsQuantityReturn = c.c.ProductsQuantityReturn,
+               ProductsVoidQuantity = (o == null) ? null : (decimal?)o.ProductsVoidQuantity,
+               ProductsVoidAmount = (o == null) ? null : (decimal?)o.ProductsVoidAmount
+           })
+
+           //#5 Fees Details
+           .GroupJoin(_context.OrderFees.Where(x => x.OrderHeader.OrderStatusId == "os-paid" && x.OrderHeader.WorkDay.Date >= reportsRequest.From.Date && x.OrderHeader.WorkDay.Date <= reportsRequest.To.Date && (!reportsRequest.BranchesIds.Any() ? true : reportsRequest.BranchesIds.Contains(x.OrderHeader.WorkDay.BranchId)))
+              .Select(oi => new
+              {
+                  oi,
+                  oi.OrderHeader.CreateAt.Hour,
+                  oi.OrderHeader.IsReturn
+              })
+           .GroupBy(x => new { x.Hour }).Select(x => new
+           {
+               Hour = x.Key.Hour,
+               FeesBeforeDiscount = x.Sum(z => z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total - z.oi.VatAmount) : (z.oi.Total))),
+               FeesBeforeDiscountReturn = x.Sum(z => !z.IsReturn ? 0 : ((z.oi.PriceVatInclusive ?? false) == true ? (z.oi.Total - z.oi.VatAmount) : (z.oi.Total))),
+               FeesDiscount = 0,
+               FeesDiscountReturn = 0,
+               FeesTax = x.Sum(z => z.IsReturn ? 0 : z.oi.VatAmount),
+               FeesTaxReturn = x.Sum(z => !z.IsReturn ? 0 : z.oi.VatAmount)
+           }), c => c.Hour, o => o.Hour, (c, o) => new
+           {
+               c = c,
+               o = o
+           })
+           .SelectMany(c => c.o.DefaultIfEmpty(), (c, o) => new
+           {
+               Hour = c.c.Hour,
+               SalesOrdersCount = c.c.SalesOrdersCount ?? 0,
+               SalesOrdersCountReturn = c.c.SalesOrdersCountReturn ?? 0,
+               CustomerCount = c.c.CustomerCount ?? 0,
+               GuestCount = c.c.GuestCount ?? 0,
+               ProductsBeforeDiscount = c.c.ProductsBeforeDiscount ?? 0,
+               ProductsBeforeDiscountReturn = c.c.ProductsBeforeDiscountReturn ?? 0,
+               ProductsDiscount = c.c.ProductsDiscount ?? 0,
+               ProductsDiscountReturn = c.c.ProductsDiscountReturn ?? 0,
+               ProductsTax = c.c.ProductsTax ?? 0,
+               ProductsTaxReturn = c.c.ProductsTaxReturn ?? 0,
+               ProductsQuantity = c.c.ProductsQuantity ?? 0,
+               ProductsQuantityReturn = c.c.ProductsQuantityReturn ?? 0,
+               ProductsVoidQuantity = c.c.ProductsVoidQuantity ?? 0,
+               ProductsVoidAmount = c.c.ProductsVoidAmount ?? 0,
+               FeesBeforeDiscount = ((o == null) ? null : (decimal?)o.FeesBeforeDiscount) ?? 0,
+               FeesBeforeDiscountReturn = ((o == null) ? null : (decimal?)o.FeesBeforeDiscountReturn) ?? 0,
+               FeesDiscount = ((o == null) ? null : (decimal?)o.FeesDiscount) ?? 0,
+               FeesDiscountReturn = ((o == null) ? null : (decimal?)o.FeesDiscountReturn) ?? 0,
+               FeesTax = ((o == null) ? null : (decimal?)o.FeesTax) ?? 0,
+               FeesTaxReturn = ((o == null) ? null : (decimal?)o.FeesTaxReturn) ?? 0
+           })
+               .Select(c => new SalesReportByHourModel()
+               {
+                   Hour = TimeSpan.FromHours(c.Hour).ToString("hh"),
+                   //OrdersCount = (c.SalesOrdersCount - c.SalesOrdersCountReturn).ToString("N0"),
+                   //AverageOrder = (c.SalesOrdersCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.SalesOrdersCount, 2)).ToString("N2"),
+                   //AveragePerGuest = (c.GuestCount == 0 ? 0 : Math.Round(((c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn)) / c.GuestCount)).ToString("N2"),
+                   //CustomersCount = c.CustomerCount.ToString("N0"),
+                   //GuestsCount = c.GuestCount.ToString("N0"),
+                   GrossSales = (c.ProductsBeforeDiscount + c.ProductsTax + c.FeesBeforeDiscount + c.FeesTax - c.ProductsBeforeDiscountReturn - c.ProductsTaxReturn - c.FeesBeforeDiscountReturn - c.FeesTaxReturn).ToString("N2"),
+                   NetSales = (c.ProductsBeforeDiscount - c.ProductsDiscount + c.FeesBeforeDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn).ToString("N2"),
+                   NetSalesWithTax = ((c.ProductsBeforeDiscount + c.FeesBeforeDiscount - c.ProductsDiscount - c.ProductsBeforeDiscountReturn + c.ProductsDiscountReturn - c.FeesBeforeDiscountReturn) + (c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
+                   NetQuantity = (c.ProductsQuantity - c.ProductsQuantityReturn).ToString("N2"),
+                   VoidAmount = (c.ProductsVoidAmount).ToString("N2"),
+                   VoidQuantity = (c.ProductsVoidQuantity).ToString("N2"),
+                   DiscountAmount = (c.ProductsDiscount + c.FeesDiscount - c.ProductsDiscountReturn - c.FeesDiscountReturn).ToString("N2"),
+                   VatAmount = ((c.ProductsTax + c.FeesTax - c.ProductsTaxReturn - c.FeesTaxReturn)).ToString("N2"),
+                   RefundAmount = (c.ProductsBeforeDiscountReturn + c.FeesBeforeDiscountReturn).ToString("N2"),
+                   RefundQuantity = (c.ProductsQuantityReturn).ToString("N2")
+               }).AsNoTracking().ToListAsync();
 
         return result;
     }

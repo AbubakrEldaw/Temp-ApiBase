@@ -88,103 +88,83 @@ namespace APIBase.Models.ReportsModels
         public string Phone { get; set; }
     }
 
-    public partial class SalesReportByDateModel
+    public class SalesReportBase
     {
-        public string Date { get; set; }
-        public string AverageOrder { get; set; } = "0";
-        public string AveragePerGuest { get; set; } = "0";
-        public string CustomersCount { get; set; } = "0";
-        public string GuestsCount { get; set; } = "0";
-        public string OrdersCount { get; set; } = "0";
-        public string Cost { get; set; } = "0";
-        public string DiscountAmount { get; set; } = "0";
-        public string VatAmount { get; set; } = "0";
+        [ReportFieldType("num")]
         public string GrossSales { get; set; } = "0";
-        public string NetQuantity { get; set; } = "0";
-        public string NetSales { get; set; } = "0";
-        public string NetSalesWithTax { get; set; } = "0";
-        public string Profit { get; set; } = "0";
-        public string RefundQuantity { get; set; } = "0";
-        public string RefundAmount { get; set; } = "0";
-        public string VoidQuantity { get; set; } = "0";
-        public string VoidAmount { get; set; } = "0";
-    }
-    public partial class SalesReportByHourModel
-    {
-        public int Hour { get; set; }
 
-        public string AverageOrder { get; set; } = "0";
-        public string AveragePerGuest { get; set; } = "0";
-        public string CustomersCount { get; set; } = "0";
-        public string GuestsCount { get; set; } = "0";
-        public string OrdersCount { get; set; } = "0";
-        public string Cost { get; set; } = "0";
-        public string DiscountAmount { get; set; } = "0";
-        public string VatAmount { get; set; } = "0";
-        public string GrossSales { get; set; } = "0";
-        public string NetQuantity { get; set; } = "0";
+        [ReportFieldType("num")]
         public string NetSales { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string NetSalesWithTax { get; set; } = "0";
-        public string Profit { get; set; } = "0";
-        public string RefundQuantity { get; set; } = "0";
+
+        [ReportFieldType("num")]
+        public string NetQuantity { get; set; } = "0";
+
+        [ReportFieldType("num")]
+        public string DiscountAmount { get; set; } = "0";
+
+        [ReportFieldType("num")]
+        public string VatAmount { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string RefundAmount { get; set; } = "0";
-        public string VoidQuantity { get; set; } = "0";
+
+        [ReportFieldType("num")]
+        public string RefundQuantity { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string VoidAmount { get; set; } = "0";
+
+        [ReportFieldType("num")]
+        public string VoidQuantity { get; set; } = "0";
     }
-    public partial class SalesReportByShiftModel
+
+    public class SalesReportByDateModel : SalesReportBase
+    {
+        [ReportFieldType("date")]
+        public string Date { get; set; }
+    }
+
+    public partial class SalesReportByHourModel : SalesReportBase
+    {
+        public string Hour { get; set; }
+    }
+
+    public partial class SalesReportByShiftModel : SalesReportBase
     {
         public string Id { get; set; }
         public string EmpId { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("date")]
         public string Date { set; get; }
+
+        [ReportFieldType("time")]
         public string OpenedAt { set; get; }
+
+        [ReportFieldType("time")]
         public String ClosedAt { set; get; }
-        public string AverageOrder { get; set; } = "0";
-        public string AveragePerGuest { get; set; } = "0";
-        public string CustomersCount { get; set; } = "0";
-        public string GuestsCount { get; set; } = "0";
-        public string OrdersCount { get; set; } = "0";
-        public string Cost { get; set; } = "0";
-        public string DiscountAmount { get; set; } = "0";
-        public string VatAmount { get; set; } = "0";
-        public string GrossSales { get; set; } = "0";
-        public string NetQuantity { get; set; } = "0";
-        public string NetSales { get; set; } = "0";
-        public string NetSalesWithTax { get; set; } = "0";
-        public string Profit { get; set; } = "0";
-        public string RefundQuantity { get; set; } = "0";
-        public string RefundAmount { get; set; } = "0";
-        public string VoidQuantity { get; set; } = "0";
-        public string VoidAmount { get; set; } = "0";
     }
 
-    public partial class SalesReportByWorkDayModel
+    public partial class SalesReportByWorkDayModel : SalesReportBase
     {
         public string Id { get; set; }
         public string BranchId { get; set; }
+
+        [ReportFieldType("date")]
         public string Date { set; get; }
+
+        [ReportFieldType("time")]
         public string OpenAt { set; get; }
-        public String CloseAt { set; get; }
+
+        [ReportFieldType("time")]
+        public string CloseAt { set; get; }
+
         public string OpenBy { set; get; }
-        public String CloseBy { set; get; }
-        public string AverageOrder { get; set; } = "0";
-        public string AveragePerGuest { get; set; } = "0";
-        public string CustomersCount { get; set; } = "0";
-        public string GuestsCount { get; set; } = "0";
-        public string OrdersCount { get; set; } = "0";
-        public string Cost { get; set; } = "0";
-        public string DiscountAmount { get; set; } = "0";
-        public string VatAmount { get; set; } = "0";
-        public string GrossSales { get; set; } = "0";
-        public string NetQuantity { get; set; } = "0";
-        public string NetSales { get; set; } = "0";
-        public string NetSalesWithTax { get; set; } = "0";
-        public string Profit { get; set; } = "0";
-        public string RefundQuantity { get; set; } = "0";
-        public string RefundAmount { get; set; } = "0";
-        public string VoidQuantity { get; set; } = "0";
-        public string VoidAmount { get; set; } = "0";
+        public string CloseBy { set; get; }
     }
 
     public partial class WorkDayDetailsModel
@@ -196,28 +176,11 @@ namespace APIBase.Models.ReportsModels
         public decimal Total { set; get; }
     }
 
-    public partial class SalesReportByXModel
+    public partial class SalesReportByXModel : SalesReportBase
     {
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
-        public string AverageOrder { get; set; } = "0";
-        public string AveragePerGuest { get; set; } = "0";
-        public string CustomersCount { get; set; } = "0";
-        public string GuestsCount { get; set; } = "0";
-        public string OrdersCount { get; set; } = "0";
-        public string Cost { get; set; } = "0";
-        public string DiscountAmount { get; set; } = "0";
-        public string VatAmount { get; set; } = "0";
-        public string GrossSales { get; set; } = "0";
-        public string NetQuantity { get; set; } = "0";
-        public string NetSales { get; set; } = "0";
-        public string NetSalesWithTax { get; set; } = "0";
-        public string Profit { get; set; } = "0";
-        public string RefundQuantity { get; set; } = "0";
-        public string RefundAmount { get; set; } = "0";
-        public string VoidQuantity { get; set; } = "0";
-        public string VoidAmount { get; set; } = "0";
     }
 
     public partial class SalesReportByVatGroupModel
@@ -225,6 +188,8 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("num")]
         public string TotalAmount { get; set; } = "0";
     }
 
@@ -233,7 +198,11 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("num")]
         public string TotalVat { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string TotalAmount { get; set; } = "0";
     }
 
@@ -243,8 +212,14 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("num")] 
         public string TotalAmount { get; set; } = "0";
+
+        [ReportFieldType("num")] 
         public string OrderLevelAmount { get; set; } = "0";
+
+        [ReportFieldType("num")] 
         public string LineLevelAmount { get; set; } = "0";
     }
     public partial class SalesReportByPaymentModel
@@ -252,12 +227,19 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("num")]
         public string TotalAmount { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string RefundAmount { get; set; } = "0";
+
+        [ReportFieldType("num")]
         public string NetAmount { get; set; } = "0";
+
         public string PaymentTypeId { get; set; }
     }
-    
+
     public partial class SalesReportByReceiptModel
     {
         public Guid Id { get; set; }
@@ -366,7 +348,7 @@ namespace APIBase.Models.ReportsModels
 
     public class ReportWrapper
     {
-        public SalesReports Report { get; set; }
+        public string Report { get; set; }
         public Dictionary<string, string> ColumnsTypes { get; set; }
         public dynamic Data { get; set; }
     }
@@ -394,17 +376,17 @@ namespace APIBase.Models.ReportsModels
         public string RefundAmount { get; set; }
         public string NetAmount { get; set; }
     }
-    
+
     public partial class PaymentTypeByBranchModel : PaymentTypeModel
     {
         public string BranchId { get; set; }
     }
-    
+
     public partial class PaymentTypeByDateModel : PaymentTypeModel
     {
         public DateTime Date { get; set; }
     }
-    
+
     public partial class PaymentTypeByBranchAndDateModel : PaymentTypeByBranchModel
     {
         public string BranchId { get; set; }

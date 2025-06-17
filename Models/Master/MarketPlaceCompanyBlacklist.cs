@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 
-#nullable disable
-
 namespace APIBase.Models.Master
 {
     public partial class MarketPlaceCompanyBlacklist
     {
-        public string CompanyId { get; set; }
-        public string MarketPlaceAppId { get; set; }
-        public string Reason { get; set; }
+        public string CompanyId { get; set; } = null!;
+        public string MarketPlaceAppId { get; set; } = null!;
+        public string Reason { get; set; } = null!;
 
-        public virtual Company Company { get; set; }
-        public virtual MarketPlaceApp MarketPlaceApp { get; set; }
+        public virtual Company Company { get; set; } = null!;
+        public virtual MarketPlaceApp MarketPlaceApp { get; set; } = null!;
     }
 }

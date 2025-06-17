@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-
-#nullable disable
 
 namespace APIBase.Models.Master
 {
@@ -17,46 +16,49 @@ namespace APIBase.Models.Master
         {
         }
 
-        public virtual DbSet<Account> Accounts { get; set; }
-        public virtual DbSet<Company> Companies { get; set; }
-        public virtual DbSet<CompanyApp> CompanyApps { get; set; }
-        public virtual DbSet<CompanyAppSetting> CompanyAppSettings { get; set; }
-        public virtual DbSet<CompanyBranch> CompanyBranches { get; set; }
-        public virtual DbSet<CompanyBranchIntegration> CompanyBranchIntegrations { get; set; }
-        public virtual DbSet<CompanyBranchSubescription> CompanyBranchSubescriptions { get; set; }
-        public virtual DbSet<CompanyBranchSubescriptionLicense> CompanyBranchSubescriptionLicenses { get; set; }
-        public virtual DbSet<CompanyFeature> CompanyFeatures { get; set; }
-        public virtual DbSet<CompanyLicense> CompanyLicenses { get; set; }
-        public virtual DbSet<CompanyPlan> CompanyPlans { get; set; }
-        public virtual DbSet<CompanySavedCard> CompanySavedCards { get; set; }
-        public virtual DbSet<ConnStr> ConnStrs { get; set; }
-        public virtual DbSet<DisplayFeature> DisplayFeatures { get; set; }
-        public virtual DbSet<DisplayFeaturePlan> DisplayFeaturePlans { get; set; }
-        public virtual DbSet<Feature> Features { get; set; }
-        public virtual DbSet<LicenseType> LicenseTypes { get; set; }
-        public virtual DbSet<MarketPlaceApp> MarketPlaceApps { get; set; }
-        public virtual DbSet<MarketPlaceAppPlanAvailability> MarketPlaceAppPlanAvailabilities { get; set; }
-        public virtual DbSet<MarketPlaceAppRefreshToken> MarketPlaceAppRefreshTokens { get; set; }
-        public virtual DbSet<MarketPlaceCategory> MarketPlaceCategories { get; set; }
-        public virtual DbSet<MarketPlaceCompanyBlacklist> MarketPlaceCompanyBlacklists { get; set; }
-        public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
-        public virtual DbSet<PaymentSession> PaymentSessions { get; set; }
-        public virtual DbSet<Plan> Plans { get; set; }
-        public virtual DbSet<PlanFeature> PlanFeatures { get; set; }
-        public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
-        public virtual DbSet<SubscriptionCategory> SubscriptionCategories { get; set; }
-        public virtual DbSet<SystemLog> SystemLogs { get; set; }
-        public virtual DbSet<Transaction> Transactions { get; set; }
-        public virtual DbSet<TransactionLine> TransactionLines { get; set; }
-        public virtual DbSet<TransactionPayment> TransactionPayments { get; set; }
-        public virtual DbSet<User> Users { get; set; }
-        public virtual DbSet<UserLink> UserLinks { get; set; }
+        public virtual DbSet<Account> Accounts { get; set; } = null!;
+        public virtual DbSet<AppsCredential> AppsCredentials { get; set; } = null!;
+        public virtual DbSet<BankTransfer> BankTransfers { get; set; } = null!;
+        public virtual DbSet<Company> Companies { get; set; } = null!;
+        public virtual DbSet<CompanyApp> CompanyApps { get; set; } = null!;
+        public virtual DbSet<CompanyAppSetting> CompanyAppSettings { get; set; } = null!;
+        public virtual DbSet<CompanyBranch> CompanyBranches { get; set; } = null!;
+        public virtual DbSet<CompanyBranchIntegration> CompanyBranchIntegrations { get; set; } = null!;
+        public virtual DbSet<CompanyFeature> CompanyFeatures { get; set; } = null!;
+        public virtual DbSet<CompanyLicense> CompanyLicenses { get; set; } = null!;
+        public virtual DbSet<CompanyPlan> CompanyPlans { get; set; } = null!;
+        public virtual DbSet<CompanySavedCard> CompanySavedCards { get; set; } = null!;
+        public virtual DbSet<ConnStr> ConnStrs { get; set; } = null!;
+        public virtual DbSet<DisplayFeature> DisplayFeatures { get; set; } = null!;
+        public virtual DbSet<Feature> Features { get; set; } = null!;
+        public virtual DbSet<LicenseType> LicenseTypes { get; set; } = null!;
+        public virtual DbSet<MarketPlaceApp> MarketPlaceApps { get; set; } = null!;
+        public virtual DbSet<MarketPlaceAppRefreshToken> MarketPlaceAppRefreshTokens { get; set; } = null!;
+        public virtual DbSet<MarketPlaceCategory> MarketPlaceCategories { get; set; } = null!;
+        public virtual DbSet<MarketPlaceCompanyBlacklist> MarketPlaceCompanyBlacklists { get; set; } = null!;
+        public virtual DbSet<PaymentMethod> PaymentMethods { get; set; } = null!;
+        public virtual DbSet<PaymentSession> PaymentSessions { get; set; } = null!;
+        public virtual DbSet<Plan> Plans { get; set; } = null!;
+        public virtual DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+        public virtual DbSet<SubscriptionCategory> SubscriptionCategories { get; set; } = null!;
+        public virtual DbSet<SystemLog> SystemLogs { get; set; } = null!;
+        public virtual DbSet<Transaction> Transactions { get; set; } = null!;
+        public virtual DbSet<TransactionLine> TransactionLines { get; set; } = null!;
+        public virtual DbSet<TransactionPayment> TransactionPayments { get; set; } = null!;
+        public virtual DbSet<User> Users { get; set; } = null!;
+        public virtual DbSet<UserLink> UserLinks { get; set; } = null!;
 
-   
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+                optionsBuilder.UseSqlServer("Data Source=192.168.100.5;Initial Catalog=forkpos_master_2 ;TrustServerCertificate=True;Persist Security Info=True;User ID=forkposmaster;Password=admin_123");
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasAnnotation("Relational:Collation", "SQL_Latin1_General_CP1_CI_AS");
-
             modelBuilder.Entity<Account>(entity =>
             {
                 entity.ToTable("account");
@@ -66,9 +68,63 @@ namespace APIBase.Models.Master
                     .HasColumnName("id");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
+
+                entity.Property(e => e.Sname)
+                    .HasMaxLength(50)
+                    .HasColumnName("sname");
+            });
+
+            modelBuilder.Entity<AppsCredential>(entity =>
+            {
+                entity.ToTable("Apps_Credentials");
+
+                entity.HasIndex(e => e.ConnStrCompanyId, "IX_Apps_Credentials_ConnStrCompanyId");
+
+                entity.HasIndex(e => e.UserId, "IX_Apps_Credentials_userId");
+
+                entity.Property(e => e.Id).HasMaxLength(200);
+
+                entity.Property(e => e.ConnStrCompanyId).HasMaxLength(20);
+
+                entity.Property(e => e.Description).HasColumnName("description");
+
+                entity.Property(e => e.Name).HasColumnName("name");
+
+                entity.Property(e => e.UserId).HasColumnName("userId");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.AppsCredentials)
+                    .HasForeignKey(d => d.UserId);
+            });
+
+            modelBuilder.Entity<BankTransfer>(entity =>
+            {
+                entity.ToTable("bank_transfer", "trn");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasDefaultValueSql("(newid())");
+
+                entity.Property(e => e.ContentType)
+                    .HasMaxLength(100)
+                    .HasColumnName("content_type");
+
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.FileData).HasColumnName("file_data");
+
+                entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+
+                entity.HasOne(d => d.Transaction)
+                    .WithMany(p => p.BankTransfers)
+                    .HasForeignKey(d => d.TransactionId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_bank_transfer_transaction");
             });
 
             modelBuilder.Entity<Company>(entity =>
@@ -90,8 +146,7 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Country)
                     .HasMaxLength(2)
                     .HasColumnName("country")
-                    .IsFixedLength(true)
-                    .HasComment("Uses iso-2 country code standard");
+                    .IsFixedLength();
 
                 entity.Property(e => e.CrNumber)
                     .HasMaxLength(50)
@@ -100,16 +155,19 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Email)
                     .HasMaxLength(100)
                     .HasColumnName("email")
-                    .IsFixedLength(true);
+                    .IsFixedLength();
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.PhoneNumber)
                     .HasMaxLength(20)
                     .HasColumnName("phone_number");
+
+                entity.Property(e => e.Sname)
+                    .HasMaxLength(50)
+                    .HasColumnName("sname");
 
                 entity.Property(e => e.Tin)
                     .HasMaxLength(50)
@@ -123,10 +181,9 @@ namespace APIBase.Models.Master
 
             modelBuilder.Entity<CompanyApp>(entity =>
             {
-                entity.HasKey(e => new { e.CompanyId, e.MarketPlaceAppId })
-                    .HasName("PK_company_app_1");
+                entity.HasKey(e => new { e.CompanyId, e.MarketPlaceAppId });
 
-                entity.ToTable("company_app", "lic");
+                entity.ToTable("company_app", "mp");
 
                 entity.Property(e => e.CompanyId)
                     .HasMaxLength(20)
@@ -138,16 +195,18 @@ namespace APIBase.Models.Master
 
                 entity.Property(e => e.Amount)
                     .HasColumnType("decimal(18, 2)")
-                    .HasColumnName("amount");
+                    .HasColumnName("amount")
+                    .HasDefaultValueSql("((0))");
 
                 entity.Property(e => e.EndDate)
                     .HasColumnType("date")
                     .HasColumnName("end_date");
 
-                entity.Property(e => e.InTrial).HasColumnName("in_trial");
+                entity.Property(e => e.InTrial)
+                    .HasColumnName("in_trial")
+                    .HasDefaultValueSql("((0))");
 
                 entity.Property(e => e.IsActive)
-                    .IsRequired()
                     .HasColumnName("is_active")
                     .HasDefaultValueSql("((1))");
 
@@ -158,9 +217,9 @@ namespace APIBase.Models.Master
                     .HasColumnName("start_date");
 
                 entity.Property(e => e.SubscriptionCategoryId)
-                    .IsRequired()
                     .HasMaxLength(20)
-                    .HasColumnName("subscription_category_id");
+                    .HasColumnName("subscription_category_id")
+                    .HasDefaultValueSql("(N'Paid')");
 
                 entity.Property(e => e.TrialEndDate)
                     .HasColumnType("date")
@@ -169,26 +228,22 @@ namespace APIBase.Models.Master
                 entity.HasOne(d => d.Company)
                     .WithMany(p => p.CompanyApps)
                     .HasForeignKey(d => d.CompanyId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_company_app_company");
 
                 entity.HasOne(d => d.MarketPlaceApp)
                     .WithMany(p => p.CompanyApps)
                     .HasForeignKey(d => d.MarketPlaceAppId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_company_app_market_place_app");
 
                 entity.HasOne(d => d.SubscriptionCategory)
                     .WithMany(p => p.CompanyApps)
                     .HasForeignKey(d => d.SubscriptionCategoryId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_company_app_subscription_category");
             });
 
             modelBuilder.Entity<CompanyAppSetting>(entity =>
             {
-                entity.HasKey(e => new { e.CompanyId, e.MarketPlaceAppId })
-                    .HasName("PK_company_app");
+                entity.HasKey(e => new { e.CompanyId, e.MarketPlaceAppId });
 
                 entity.ToTable("company_app_setting", "mp");
 
@@ -205,12 +260,12 @@ namespace APIBase.Models.Master
                 entity.HasOne(d => d.Company)
                     .WithMany(p => p.CompanyAppSettings)
                     .HasForeignKey(d => d.CompanyId)
-                    .HasConstraintName("FK_company_app_company");
+                    .HasConstraintName("FK_company_app_setting_company");
 
                 entity.HasOne(d => d.MarketPlaceApp)
                     .WithMany(p => p.CompanyAppSettings)
                     .HasForeignKey(d => d.MarketPlaceAppId)
-                    .HasConstraintName("FK_company_app_market_place_app");
+                    .HasConstraintName("FK_company_app_setting_market_place_app");
             });
 
             modelBuilder.Entity<CompanyBranch>(entity =>
@@ -260,74 +315,6 @@ namespace APIBase.Models.Master
                     .HasConstraintName("FK_company_branch_integration_company_branch");
             });
 
-            modelBuilder.Entity<CompanyBranchSubescription>(entity =>
-            {
-                entity.HasKey(e => new { e.CompanyId, e.BranchId });
-
-                entity.ToTable("company_branch_subescription", "lic");
-
-                entity.Property(e => e.CompanyId)
-                    .HasMaxLength(20)
-                    .HasColumnName("company_id");
-
-                entity.Property(e => e.BranchId)
-                    .HasMaxLength(20)
-                    .HasColumnName("branch_id");
-
-                entity.Property(e => e.EndDate)
-                    .HasColumnType("date")
-                    .HasColumnName("end_date");
-
-                entity.Property(e => e.GracePeriodInDays).HasColumnName("grace_period_in_days");
-
-                entity.Property(e => e.StartDate)
-                    .HasColumnType("date")
-                    .HasColumnName("start_date");
-
-                entity.HasOne(d => d.Company)
-                    .WithMany(p => p.CompanyBranchSubescriptions)
-                    .HasForeignKey(d => d.CompanyId)
-                    .HasConstraintName("FK_company_branch_subescription_company");
-
-                entity.HasOne(d => d.CompanyBranch)
-                    .WithOne(p => p.CompanyBranchSubescription)
-                    .HasForeignKey<CompanyBranchSubescription>(d => new { d.CompanyId, d.BranchId })
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_company_branch_subescription_company_branch");
-            });
-
-            modelBuilder.Entity<CompanyBranchSubescriptionLicense>(entity =>
-            {
-                entity.HasKey(e => new { e.CompanyId, e.BranchId, e.LicenseTypeId });
-
-                entity.ToTable("company_branch_subescription_license", "lic");
-
-                entity.Property(e => e.CompanyId)
-                    .HasMaxLength(20)
-                    .HasColumnName("company_id");
-
-                entity.Property(e => e.BranchId)
-                    .HasMaxLength(20)
-                    .HasColumnName("branch_id");
-
-                entity.Property(e => e.LicenseTypeId)
-                    .HasMaxLength(20)
-                    .HasColumnName("license_type_id");
-
-                entity.Property(e => e.Quantity).HasColumnName("quantity");
-
-                entity.HasOne(d => d.LicenseType)
-                    .WithMany(p => p.CompanyBranchSubescriptionLicenses)
-                    .HasForeignKey(d => d.LicenseTypeId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_company_branch_subescription_license_license_type");
-
-                entity.HasOne(d => d.CompanyBranchSubescription)
-                    .WithMany(p => p.CompanyBranchSubescriptionLicenses)
-                    .HasForeignKey(d => new { d.CompanyId, d.BranchId })
-                    .HasConstraintName("FK_company_branch_subescription_license_company_branch_subescription");
-            });
-
             modelBuilder.Entity<CompanyFeature>(entity =>
             {
                 entity.HasKey(e => new { e.CompanyId, e.FeatureId });
@@ -362,7 +349,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("start_date");
 
                 entity.Property(e => e.SubscriptionCategoryId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("subscription_category_id");
 
@@ -398,7 +384,6 @@ namespace APIBase.Models.Master
                     .HasDefaultValueSql("(newid())");
 
                 entity.Property(e => e.CompanyId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("company_id");
 
@@ -414,7 +399,6 @@ namespace APIBase.Models.Master
                     .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.LicenseTypeId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("license_type_id");
 
@@ -429,7 +413,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("start_date");
 
                 entity.Property(e => e.SubscriptionCategoryId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("subscription_category_id");
 
@@ -489,16 +472,16 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.InTrial).HasColumnName("in_trial");
 
                 entity.Property(e => e.IsActive)
-                    .IsRequired()
                     .HasColumnName("is_active")
                     .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.PlanId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("plan_id");
 
-                entity.Property(e => e.RenewalAttempts).HasColumnName("renewal_attempts");
+                entity.Property(e => e.RenewalAttempts)
+                    .HasColumnName("renewal_attempts")
+                    .HasDefaultValueSql("((0))");
 
                 entity.Property(e => e.StartDate)
                     .HasColumnType("date")
@@ -530,32 +513,27 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Alias).HasColumnName("alias");
 
                 entity.Property(e => e.Brand)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("brand");
 
                 entity.Property(e => e.CardNumberMasked)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .IsUnicode(false)
                     .HasColumnName("card_number_masked");
 
                 entity.Property(e => e.CompanyId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("company_id");
 
                 entity.Property(e => e.DisplayToken).HasColumnName("display_token");
 
                 entity.Property(e => e.ExpiryMonth)
-                    .IsRequired()
                     .HasMaxLength(2)
                     .IsUnicode(false)
                     .HasColumnName("expiry_month");
 
                 entity.Property(e => e.ExpiryYear)
-                    .IsRequired()
                     .HasMaxLength(4)
                     .IsUnicode(false)
                     .HasColumnName("expiry_year");
@@ -583,18 +561,9 @@ namespace APIBase.Models.Master
 
                 entity.Property(e => e.CompanyId).HasMaxLength(20);
 
-                entity.Property(e => e.DatabaseName).IsRequired();
-
-                entity.Property(e => e.InstanceName).IsRequired();
-
-                entity.Property(e => e.Password).IsRequired();
-
-                entity.Property(e => e.ServerName).IsRequired();
-
                 entity.Property(e => e.UserName)
-                    .IsRequired()
                     .HasMaxLength(50)
-                    .HasDefaultValueSql("('sa')");
+                    .HasDefaultValueSql("(N'sa')");
 
                 entity.HasOne(d => d.Company)
                     .WithOne(p => p.ConnStr)
@@ -614,44 +583,31 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.ImageUrl).HasColumnName("image_url");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnName("name");
 
                 entity.Property(e => e.OrderIndex).HasColumnName("order_index");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnName("sname");
-            });
 
-            modelBuilder.Entity<DisplayFeaturePlan>(entity =>
-            {
-                entity.HasKey(e => new { e.DisplayFeatureId, e.PlanId })
-                    .HasName("PK_display_plan_feature");
+                entity.HasMany(d => d.Plans)
+                    .WithMany(p => p.DisplayFeatures)
+                    .UsingEntity<Dictionary<string, object>>(
+                        "DisplayFeaturePlan",
+                        l => l.HasOne<Plan>().WithMany().HasForeignKey("PlanId").OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_display_feature_plan_plan"),
+                        r => r.HasOne<DisplayFeature>().WithMany().HasForeignKey("DisplayFeatureId").OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_display_feature_plan_display_feature"),
+                        j =>
+                        {
+                            j.HasKey("DisplayFeatureId", "PlanId").HasName("PK_display_plan_feature");
 
-                entity.ToTable("display_feature_plan");
+                            j.ToTable("display_feature_plan");
 
-                entity.Property(e => e.DisplayFeatureId)
-                    .HasMaxLength(30)
-                    .HasColumnName("display_feature_id");
+                            j.IndexerProperty<string>("DisplayFeatureId").HasMaxLength(30).HasColumnName("display_feature_id");
 
-                entity.Property(e => e.PlanId)
-                    .HasMaxLength(20)
-                    .HasColumnName("plan_id");
-
-                entity.HasOne(d => d.DisplayFeature)
-                    .WithMany(p => p.DisplayFeaturePlans)
-                    .HasForeignKey(d => d.DisplayFeatureId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_display_feature_plan_display_feature");
-
-                entity.HasOne(d => d.Plan)
-                    .WithMany(p => p.DisplayFeaturePlans)
-                    .HasForeignKey(d => d.PlanId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_display_feature_plan_plan");
+                            j.IndexerProperty<string>("PlanId").HasMaxLength(20).HasColumnName("plan_id");
+                        });
             });
 
             modelBuilder.Entity<Feature>(entity =>
@@ -665,7 +621,6 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Description).HasColumnName("description");
 
                 entity.Property(e => e.IsPurchasable)
-                    .IsRequired()
                     .HasColumnName("is_purchasable")
                     .HasDefaultValueSql("((1))");
 
@@ -674,14 +629,12 @@ namespace APIBase.Models.Master
                     .HasColumnName("monthly_price");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sdescription).HasColumnName("sdescription");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
@@ -704,12 +657,10 @@ namespace APIBase.Models.Master
                     .HasColumnName("monthly_price");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
@@ -738,11 +689,10 @@ namespace APIBase.Models.Master
                     .HasColumnName("client_secret");
 
                 entity.Property(e => e.ConnectionLevel)
-                    .IsRequired()
                     .HasMaxLength(1)
                     .IsUnicode(false)
                     .HasColumnName("connection_level")
-                    .IsFixedLength(true)
+                    .IsFixedLength()
                     .HasComment("c = company, b = branch level");
 
                 entity.Property(e => e.Description).HasColumnName("description");
@@ -762,7 +712,6 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.JsonProp).HasColumnName("json_prop");
 
                 entity.Property(e => e.MarketPlaceCategoryId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("market_place_category_id");
 
@@ -771,7 +720,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("monthly_price");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
@@ -784,18 +732,16 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.Sdescription).HasColumnName("sdescription");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
 
                 entity.Property(e => e.Status)
-                    .IsRequired()
                     .HasMaxLength(1)
                     .IsUnicode(false)
                     .HasColumnName("status")
                     .HasDefaultValueSql("('i')")
-                    .IsFixedLength(true)
+                    .IsFixedLength()
                     .HasComment("a=active, i = inactive, c=commingsoon");
 
                 entity.Property(e => e.Website)
@@ -810,31 +756,23 @@ namespace APIBase.Models.Master
                     .WithMany(p => p.MarketPlaceApps)
                     .HasForeignKey(d => d.MarketPlaceCategoryId)
                     .HasConstraintName("FK_market_place_app_market_place_category");
-            });
 
-            modelBuilder.Entity<MarketPlaceAppPlanAvailability>(entity =>
-            {
-                entity.HasKey(e => new { e.MarketPlaceAppId, e.PlanId });
+                entity.HasMany(d => d.Plans)
+                    .WithMany(p => p.MarketPlaceApps)
+                    .UsingEntity<Dictionary<string, object>>(
+                        "MarketPlaceAppPlanAvailability",
+                        l => l.HasOne<Plan>().WithMany().HasForeignKey("PlanId").HasConstraintName("FK_market_place_app_plan_availability_plan"),
+                        r => r.HasOne<MarketPlaceApp>().WithMany().HasForeignKey("MarketPlaceAppId").HasConstraintName("FK_market_place_app_plan_availability_market_place_app"),
+                        j =>
+                        {
+                            j.HasKey("MarketPlaceAppId", "PlanId");
 
-                entity.ToTable("market_place_app_plan_availability", "mp");
+                            j.ToTable("market_place_app_plan_availability", "mp");
 
-                entity.Property(e => e.MarketPlaceAppId)
-                    .HasMaxLength(20)
-                    .HasColumnName("market_place_app_id");
+                            j.IndexerProperty<string>("MarketPlaceAppId").HasMaxLength(20).HasColumnName("market_place_app_id");
 
-                entity.Property(e => e.PlanId)
-                    .HasMaxLength(20)
-                    .HasColumnName("plan_id");
-
-                entity.HasOne(d => d.MarketPlaceApp)
-                    .WithMany(p => p.MarketPlaceAppPlanAvailabilities)
-                    .HasForeignKey(d => d.MarketPlaceAppId)
-                    .HasConstraintName("FK_market_place_app_plan_availability_market_place_app");
-
-                entity.HasOne(d => d.Plan)
-                    .WithMany(p => p.MarketPlaceAppPlanAvailabilities)
-                    .HasForeignKey(d => d.PlanId)
-                    .HasConstraintName("FK_market_place_app_plan_availability_plan");
+                            j.IndexerProperty<string>("PlanId").HasMaxLength(20).HasColumnName("plan_id");
+                        });
             });
 
             modelBuilder.Entity<MarketPlaceAppRefreshToken>(entity =>
@@ -843,14 +781,9 @@ namespace APIBase.Models.Master
 
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
-                entity.Property(e => e.CreatedByIp).IsRequired();
-
                 entity.Property(e => e.MarketPlaceAppId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("market_place_app_id");
-
-                entity.Property(e => e.Token).IsRequired();
 
                 entity.HasOne(d => d.MarketPlaceApp)
                     .WithMany(p => p.MarketPlaceAppRefreshTokens)
@@ -868,12 +801,10 @@ namespace APIBase.Models.Master
                     .HasColumnName("id");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
@@ -894,7 +825,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("market_place_app_id");
 
                 entity.Property(e => e.Reason)
-                    .IsRequired()
                     .HasMaxLength(200)
                     .HasColumnName("reason");
 
@@ -926,19 +856,16 @@ namespace APIBase.Models.Master
                     .HasColumnName("fees");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sdescription).HasColumnName("sdescription");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname");
 
                 entity.Property(e => e.Status)
-                    .IsRequired()
                     .HasMaxLength(15)
                     .IsUnicode(false)
                     .HasColumnName("status");
@@ -953,7 +880,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("id");
 
                 entity.Property(e => e.CompanyId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("company_id");
 
@@ -961,20 +887,15 @@ namespace APIBase.Models.Master
                     .HasColumnType("datetime")
                     .HasColumnName("created_at");
 
-                entity.Property(e => e.PaymentJson)
-                    .IsRequired()
-                    .HasColumnName("payment_json");
+                entity.Property(e => e.PaymentJson).HasColumnName("payment_json");
 
                 entity.Property(e => e.Status)
-                    .IsRequired()
                     .HasMaxLength(15)
                     .HasColumnName("status");
 
                 entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
 
-                entity.Property(e => e.TransactionLinesJson)
-                    .IsRequired()
-                    .HasColumnName("transaction_lines_json");
+                entity.Property(e => e.TransactionLinesJson).HasColumnName("transaction_lines_json");
 
                 entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -1011,14 +932,12 @@ namespace APIBase.Models.Master
                     .HasColumnName("monthly_price");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sdescription).HasColumnName("sdescription");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname")
                     .HasDefaultValueSql("('')");
@@ -1026,31 +945,23 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.YearlyPrice)
                     .HasColumnType("decimal(18, 0)")
                     .HasColumnName("yearly_price");
-            });
 
-            modelBuilder.Entity<PlanFeature>(entity =>
-            {
-                entity.HasKey(e => new { e.PlanId, e.FeatureId });
+                entity.HasMany(d => d.Features)
+                    .WithMany(p => p.Plans)
+                    .UsingEntity<Dictionary<string, object>>(
+                        "PlanFeature",
+                        l => l.HasOne<Feature>().WithMany().HasForeignKey("FeatureId").HasConstraintName("FK_plan_feature_feature"),
+                        r => r.HasOne<Plan>().WithMany().HasForeignKey("PlanId").HasConstraintName("FK_plan_feature_plan"),
+                        j =>
+                        {
+                            j.HasKey("PlanId", "FeatureId");
 
-                entity.ToTable("plan_feature", "lic");
+                            j.ToTable("plan_feature", "lic");
 
-                entity.Property(e => e.PlanId)
-                    .HasMaxLength(20)
-                    .HasColumnName("plan_id");
+                            j.IndexerProperty<string>("PlanId").HasMaxLength(20).HasColumnName("plan_id");
 
-                entity.Property(e => e.FeatureId)
-                    .HasMaxLength(20)
-                    .HasColumnName("feature_id");
-
-                entity.HasOne(d => d.Feature)
-                    .WithMany(p => p.PlanFeatures)
-                    .HasForeignKey(d => d.FeatureId)
-                    .HasConstraintName("FK_plan_feature_feature");
-
-                entity.HasOne(d => d.Plan)
-                    .WithMany(p => p.PlanFeatures)
-                    .HasForeignKey(d => d.PlanId)
-                    .HasConstraintName("FK_plan_feature_plan");
+                            j.IndexerProperty<string>("FeatureId").HasMaxLength(20).HasColumnName("feature_id");
+                        });
             });
 
             modelBuilder.Entity<RefreshToken>(entity =>
@@ -1058,10 +969,6 @@ namespace APIBase.Models.Master
                 entity.ToTable("RefreshToken");
 
                 entity.HasIndex(e => e.UserId, "IX_RefreshToken_UserId");
-
-                entity.Property(e => e.CreatedByIp).IsRequired();
-
-                entity.Property(e => e.Token).IsRequired();
 
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.RefreshTokens)
@@ -1077,12 +984,10 @@ namespace APIBase.Models.Master
                     .HasColumnName("id");
 
                 entity.Property(e => e.Name)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("name");
 
                 entity.Property(e => e.Sname)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("sname");
             });
@@ -1096,18 +1001,14 @@ namespace APIBase.Models.Master
                     .HasDefaultValueSql("(newid())");
 
                 entity.Property(e => e.Action)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("action");
 
                 entity.Property(e => e.CompanyId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("company_id");
 
-                entity.Property(e => e.ErrorMessage)
-                    .IsRequired()
-                    .HasColumnName("error_message");
+                entity.Property(e => e.ErrorMessage).HasColumnName("error_message");
 
                 entity.Property(e => e.Notes).HasColumnName("notes");
 
@@ -1116,7 +1017,6 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.ResponseJson).HasColumnName("response_json");
 
                 entity.Property(e => e.Status)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("status");
 
@@ -1126,7 +1026,6 @@ namespace APIBase.Models.Master
                     .HasDefaultValueSql("(getdate())");
 
                 entity.Property(e => e.Type)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("type");
 
@@ -1146,7 +1045,6 @@ namespace APIBase.Models.Master
                     .HasDefaultValueSql("(newid())");
 
                 entity.Property(e => e.CompanyId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("company_id");
 
@@ -1170,7 +1068,6 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.PaidBy).HasColumnName("paid_by");
 
                 entity.Property(e => e.Status)
-                    .IsRequired()
                     .HasMaxLength(15)
                     .HasColumnName("status");
 
@@ -1183,7 +1080,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("total");
 
                 entity.Property(e => e.Type)
-                    .IsRequired()
                     .HasMaxLength(15)
                     .HasColumnName("type")
                     .HasDefaultValueSql("('Purchase')");
@@ -1230,7 +1126,6 @@ namespace APIBase.Models.Master
                     .HasColumnName("base_price");
 
                 entity.Property(e => e.Description)
-                    .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnName("description")
                     .HasComment("Complete name of the purchased item");
@@ -1245,18 +1140,20 @@ namespace APIBase.Models.Master
 
                 entity.Property(e => e.OrderIndex).HasColumnName("order_index");
 
+                entity.Property(e => e.PlanId)
+                    .HasMaxLength(20)
+                    .HasColumnName("plan_id");
+
                 entity.Property(e => e.Price)
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("price");
 
                 entity.Property(e => e.ReferenceId)
-                    .IsRequired()
                     .HasMaxLength(50)
                     .HasColumnName("reference_id")
                     .HasComment("License, Feature, or App Id");
 
                 entity.Property(e => e.Sdescription)
-                    .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnName("sdescription");
 
@@ -1275,7 +1172,6 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
 
                 entity.Property(e => e.Type)
-                    .IsRequired()
                     .HasMaxLength(10)
                     .HasColumnName("type")
                     .HasComment("License, Feature, App");
@@ -1283,6 +1179,12 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.VatAmount)
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("vat_amount");
+
+                entity.HasOne(d => d.Plan)
+                    .WithMany(p => p.TransactionLines)
+                    .HasForeignKey(d => d.PlanId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_transaction_line_plan");
 
                 entity.HasOne(d => d.Transaction)
                     .WithMany(p => p.TransactionLines)
@@ -1302,6 +1204,8 @@ namespace APIBase.Models.Master
                     .HasColumnType("decimal(18, 2)")
                     .HasColumnName("amount");
 
+                entity.Property(e => e.CompanySavedCardId).HasColumnName("company_saved_card_id");
+
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("datetime")
                     .HasColumnName("created_at");
@@ -1309,11 +1213,15 @@ namespace APIBase.Models.Master
                 entity.Property(e => e.OrderIndex).HasColumnName("order_index");
 
                 entity.Property(e => e.PaymentMethodId)
-                    .IsRequired()
                     .HasMaxLength(20)
                     .HasColumnName("payment_method_id");
 
                 entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+
+                entity.HasOne(d => d.CompanySavedCard)
+                    .WithMany(p => p.TransactionPayments)
+                    .HasForeignKey(d => d.CompanySavedCardId)
+                    .HasConstraintName("FK_transaction_payment_company_saved_card");
 
                 entity.HasOne(d => d.PaymentMethod)
                     .WithMany(p => p.TransactionPayments)
@@ -1332,22 +1240,14 @@ namespace APIBase.Models.Master
             {
                 entity.HasIndex(e => e.CompanyId, "IX_Users_CompanyId");
 
-                entity.HasIndex(e => e.Username, "IX_Users_Username")
+                entity.HasIndex(e => new { e.Username, e.Password }, "IX_Users_Username")
                     .IsUnique();
 
-                entity.Property(e => e.CompanyId)
-                    .IsRequired()
-                    .HasMaxLength(20);
-
-                entity.Property(e => e.EmployeeId).IsRequired();
-
-                entity.Property(e => e.FirstName).IsRequired();
+                entity.Property(e => e.CompanyId).HasMaxLength(20);
 
                 entity.Property(e => e.IsAdmin)
                     .HasColumnName("is_admin")
                     .HasDefaultValueSql("((0))");
-
-                entity.Property(e => e.LastName).IsRequired();
 
                 entity.Property(e => e.Otp)
                     .HasMaxLength(6)
@@ -1359,26 +1259,36 @@ namespace APIBase.Models.Master
                     .HasColumnType("datetime")
                     .HasColumnName("otpSentAt");
 
-                entity.Property(e => e.Password).IsRequired();
+                entity.Property(e => e.Password).HasMaxLength(50);
 
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
 
-                entity.Property(e => e.Username).IsRequired();
+                entity.Property(e => e.Username).HasMaxLength(200);
 
                 entity.Property(e => e.VerifiedAt).HasColumnType("datetime");
+
+                entity.HasOne(d => d.Company)
+                    .WithMany(p => p.Users)
+                    .HasForeignKey(d => d.CompanyId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Users_company");
             });
 
             modelBuilder.Entity<UserLink>(entity =>
             {
+                entity.HasKey(e => new { e.UserId, e.LinkedUserId })
+                    .HasName("PK_user_link_1");
+
                 entity.ToTable("user_link");
 
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasDefaultValueSql("(newid())");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
 
                 entity.Property(e => e.LinkedUserId).HasColumnName("linked_user_id");
 
-                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at")
+                    .HasDefaultValueSql("(getdate())");
 
                 entity.HasOne(d => d.LinkedUser)
                     .WithMany(p => p.UserLinkLinkedUsers)
