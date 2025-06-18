@@ -17,6 +17,7 @@ using APIBase.Services;
 using APIBase.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Company = APIBase.Models.Master.Company;
@@ -24,26 +25,22 @@ using Company = APIBase.Models.Master.Company;
 namespace APIBase.Controllers.Reports;
 public partial class ReportsController : Controller
 {
-    [HttpGet("Sales")]
-    public async Task<ActionResult<ReportWrapper>> GetSalesReport
-    (
-        [FromQuery] SalesReportsGrouping reportType,
-        [FromQuery] string branches,
-        [FromQuery] DateTime from,
-        [FromQuery] DateTime to,
-        [FromQuery] string itemGroups = "",
-        [FromQuery] string orderSources = ""
-    )
+    [HttpPost("Sales")]
+    public async Task<ActionResult<ReportWrapper>> GetSalesReport([FromQuery] SalesReportsGrouping reportType, [FromBody] ReportsRequest reportsRequest)
     {
         try
         {
+            if (!ReportsPerms.TryGetValue(reportType, out string? perm))
+                throw new Exception();
+
+            if (string.IsNullOrEmpty(perm) || !User.IsInRole(perm))
+                throw new Exception();
+
             if (!ReportModelTypes.TryGetValue(reportType, out var modelType))
                 return new ObjectResult(new ApiError("400", $"Bad Request"))
                 {
                     StatusCode = 400
                 };
-
-            ReportsRequest reportsRequest = new(branches, from, to, itemGroups, orderSources);
 
             dynamic? data = reportType switch
             {
@@ -57,9 +54,9 @@ public partial class ReportsController : Controller
                 SalesReportsGrouping.WorkDay => await SalesByWorkDayAsync(reportsRequest),
                 SalesReportsGrouping.Shift => await SalesByShiftAsync(reportsRequest),
                 SalesReportsGrouping.PaymentType => await SalesByPaymentTypeAsync(reportsRequest),
-                SalesReportsGrouping.PaymentTypeByBranch => await SalesByPaymentTypeByBranchAsync(reportsRequest),
-                SalesReportsGrouping.PaymentTypeByDate => await SalesByPaymentTypeByDateAsync(reportsRequest),
-                SalesReportsGrouping.PaymentTypeByDateByBranch => await SalesByPaymentTypeByBranchAndDateAsync(reportsRequest),
+                SalesReportsGrouping.PTBranch => await SalesByPaymentTypeByBranchAsync(reportsRequest),
+                SalesReportsGrouping.PTDate => await SalesByPaymentTypeByDateAsync(reportsRequest),
+                SalesReportsGrouping.PTDateBranch => await SalesByPaymentTypeByBranchAndDateAsync(reportsRequest),
                 SalesReportsGrouping.OrderSource => await SalesByOrderSourceAsync(reportsRequest),
                 SalesReportsGrouping.DiningOption => await SalesByDiningOptionAsync(reportsRequest),
                 _ => null
@@ -128,14 +125,36 @@ public partial class ReportsController : Controller
         [SalesReportsGrouping.ItemGroup] = typeof(SalesReportByXModel),
         [SalesReportsGrouping.Employee] = typeof(SalesReportByXModel),
         [SalesReportsGrouping.PaymentType] = typeof(PaymentTypeModel),
-        [SalesReportsGrouping.PaymentTypeByBranch] = typeof(PaymentTypeByBranchModel),
-        [SalesReportsGrouping.PaymentTypeByDate] = typeof(PaymentTypeByDateModel),
-        [SalesReportsGrouping.PaymentTypeByDateByBranch] = typeof(PaymentTypeByBranchAndDateModel),
+        [SalesReportsGrouping.PTBranch] = typeof(PaymentTypeByBranchModel),
+        [SalesReportsGrouping.PTDate] = typeof(PaymentTypeByDateModel),
+        [SalesReportsGrouping.PTDateBranch] = typeof(PaymentTypeByBranchAndDateModel),
         [SalesReportsGrouping.WorkDay] = typeof(SalesReportByWorkDayModel),
         [SalesReportsGrouping.Shift] = typeof(SalesReportByShiftModel),
         [SalesReportsGrouping.OrderSource] = typeof(SalesReportByXModel),
         [SalesReportsGrouping.DiningOption] = typeof(SalesReportByXModel),
     };
+
+    private static readonly Dictionary<SalesReportsGrouping, string> ReportsPerms = new()
+    {
+        [SalesReportsGrouping.Date] = "prm-rpt-summary",
+        [SalesReportsGrouping.Branch] = "prm-rpt-branch",
+        [SalesReportsGrouping.Hour] = "prm-rpt-hour",
+        [SalesReportsGrouping.Item] = "prm-rpt-item",
+        [SalesReportsGrouping.Modifier] = "prm-rpt-modifier",
+        [SalesReportsGrouping.ItemGroup] = "prm-rpt-menugroup",
+        [SalesReportsGrouping.Employee] = "prm-rpt-employee",
+        [SalesReportsGrouping.WorkDay] = "prm-rpt-workday",
+        [SalesReportsGrouping.Shift] = "prm-rpt-shift",
+
+        [SalesReportsGrouping.PaymentType] = "prm-rpt-payment",
+        [SalesReportsGrouping.PTDate] = "prm-rpt-payment",
+        [SalesReportsGrouping.PTBranch] = "prm-rpt-payment",
+        [SalesReportsGrouping.PTDateBranch] = "prm-rpt-payment",
+
+        [SalesReportsGrouping.OrderSource] = "prm-rpt-ordersource",
+        [SalesReportsGrouping.DiningOption] = "prm-rpt-diningoption"
+    };
+
 
     private async Task<IEnumerable<SalesReportByDateModel>> SalesByDateAsync(ReportsRequest reportsRequest)
     {
@@ -445,12 +464,14 @@ public partial class ReportsController : Controller
                 && x.OrderHeader.WorkDay.Date >= reportsRequest.From.Date
                 && x.OrderHeader.WorkDay.Date <= reportsRequest.To.Date);
 
+        var x = await _context.Items.ToListAsync();
+
         if (reportsRequest.BranchesIds.Any())
         {
+            
             filteredOrderItems = filteredOrderItems
                 .Where(x => reportsRequest.BranchesIds.Contains(x.OrderHeader.WorkDay.BranchId));
         }
-
 
         if (reportsRequest.ItemGroupsIds.Any())
         {

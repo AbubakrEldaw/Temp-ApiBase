@@ -14,9 +14,9 @@ namespace APIBase.Models.Enums
         Shift,
 
         PaymentType,
-        PaymentTypeByDate,
-        PaymentTypeByBranch,
-        PaymentTypeByDateByBranch,
+        PTDate,
+        PTBranch,
+        PTDateBranch,
 
         OrderSource,
         DiningOption

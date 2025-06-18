@@ -372,8 +372,14 @@ namespace APIBase.Models.ReportsModels
         public string Id { get; set; }
         public string Name { get; set; }
         public string Sname { get; set; }
+
+        [ReportFieldType("num")]
         public string TotalAmount { get; set; }
+
+        [ReportFieldType("num")]
         public string RefundAmount { get; set; }
+
+        [ReportFieldType("num")]
         public string NetAmount { get; set; }
     }
 
@@ -384,12 +390,15 @@ namespace APIBase.Models.ReportsModels
 
     public partial class PaymentTypeByDateModel : PaymentTypeModel
     {
+        [ReportFieldType("date")]
         public DateTime Date { get; set; }
     }
 
     public partial class PaymentTypeByBranchAndDateModel : PaymentTypeByBranchModel
     {
         public string BranchId { get; set; }
+
+        [ReportFieldType("date")]
         public DateTime Date { get; set; }
     }
 }
